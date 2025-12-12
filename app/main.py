@@ -7,7 +7,9 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Fashion Coordination AI Recommendation API",
     version="1.0.0",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url=f"{settings.API_V1_STR}/docs",
+    redoc_url=f"{settings.API_V1_STR}/redoc"
 )
 
 app.add_middleware(

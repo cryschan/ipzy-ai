@@ -3,15 +3,38 @@ from rembg import remove
 import requests
 from io import BytesIO
 from typing import List
-import os
 import uuid
+import hashlib
+import boto3
+from botocore.exceptions import ClientError
 from app.core.config import settings
 from app.schemas.recommendation import ProductItem
 
 
 class ImageProcessingService:
     def __init__(self):
-        os.makedirs(settings.IMAGE_OUTPUT_DIR, exist_ok=True)
+        self.s3_client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_REGION
+        )
+
+    def _get_url_hash(self, url: str) -> str:
+        """Generate MD5 hash from URL for caching"""
+        return hashlib.md5(url.encode()).hexdigest()
+
+    def _check_s3_object_exists(self, s3_key: str) -> bool:
+        """Check if object exists in S3"""
+        try:
+            self.s3_client.head_object(Bucket=settings.AWS_S3_BUCKET, Key=s3_key)
+            return True
+        except ClientError:
+            return False
+
+    def _get_s3_url(self, s3_key: str) -> str:
+        """Generate S3 public URL"""
+        return f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{s3_key}"
 
     async def create_composite_image(self, products: List[ProductItem]) -> str:
         try:
@@ -30,13 +53,29 @@ class ImageProcessingService:
 
             composite = self._compose_images(processed_images)
 
-            output_filename = f"{uuid.uuid4()}.png"
-            output_path = os.path.join(settings.IMAGE_OUTPUT_DIR, output_filename)
+            filename = f"{uuid.uuid4()}.png"
+            s3_key = f"{settings.S3_IMAGE_PREFIX}/composite/{filename}"
 
-            composite.save(output_path, format='PNG')
+            buffer = BytesIO()
+            composite.save(buffer, format='PNG')
+            buffer.seek(0)
 
-            return f"/outputs/composites/{output_filename}"
+            self.s3_client.upload_fileobj(
+                buffer,
+                settings.AWS_S3_BUCKET,
+                s3_key,
+                ExtraArgs={
+                    'ContentType': 'image/png'
+                }
+            )
 
+            s3_url = f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{s3_key}"
+
+            return s3_url
+
+        except ClientError as e:
+            print(f"S3 upload error: {str(e)}")
+            return None
         except Exception as e:
             print(f"Image processing error: {str(e)}")
             return None
@@ -97,18 +136,41 @@ class ImageProcessingService:
 
     async def remove_background(self, image_url: str) -> str:
         try:
+            # Generate hash-based S3 key for caching
+            url_hash = self._get_url_hash(image_url)
+            s3_key = f"{settings.S3_IMAGE_PREFIX}/{url_hash}.png"
+
+            # Check if already exists in S3
+            if self._check_s3_object_exists(s3_key):
+                print(f"Cache hit! Returning existing image for: {image_url}")
+                return self._get_s3_url(s3_key)
+
+            # Cache miss - process image
+            print(f"Cache miss. Processing new image: {image_url}")
             output_image = await self._download_and_remove_bg(image_url)
 
             if not output_image:
                 return None
 
-            output_filename = f"{uuid.uuid4()}.png"
-            output_path = os.path.join(settings.IMAGE_OUTPUT_DIR, output_filename)
+            # Upload to S3 with hash-based filename
+            buffer = BytesIO()
+            output_image.save(buffer, format='PNG')
+            buffer.seek(0)
 
-            output_image.save(output_path, format='PNG')
+            self.s3_client.upload_fileobj(
+                buffer,
+                settings.AWS_S3_BUCKET,
+                s3_key,
+                ExtraArgs={
+                    'ContentType': 'image/png'
+                }
+            )
 
-            return f"/outputs/composites/{output_filename}"
+            return self._get_s3_url(s3_key)
 
+        except ClientError as e:
+            print(f"S3 upload error: {str(e)}")
+            return None
         except Exception as e:
             print(f"Remove background error: {str(e)}")
             return None
