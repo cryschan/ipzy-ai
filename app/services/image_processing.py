@@ -6,19 +6,40 @@ from typing import List
 import uuid
 import hashlib
 import boto3
+from urllib.parse import quote
 from botocore.exceptions import ClientError
 from app.core.config import settings
 from app.schemas.recommendation import ProductItem
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ImageProcessingService:
     def __init__(self):
-        self.s3_client = boto3.client(
-            's3',
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_REGION
-        )
+        s3_client_kwargs = {
+            'region_name': settings.AWS_REGION
+        }
+        if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+            s3_client_kwargs['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
+            s3_client_kwargs['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
+        self.s3_client = boto3.client('s3', **s3_client_kwargs)
+
+        # Early validation for clearer runtime errors
+        if not settings.AWS_S3_BUCKET:
+            raise RuntimeError("AWS_S3_BUCKET is not configured. Set it in your environment or .env.")
+
+        if (settings.AWS_ACCESS_KEY_ID and not settings.AWS_SECRET_ACCESS_KEY) or \
+           (settings.AWS_SECRET_ACCESS_KEY and not settings.AWS_ACCESS_KEY_ID):
+            raise RuntimeError("Provide both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY together, or omit both to use the default credential chain.")
+
+        # If explicit keys weren't provided, ensure some credentials are available via the default chain
+        if not (settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY):
+            session = boto3.session.Session()
+            if session.get_credentials() is None:
+                raise RuntimeError(
+                    "AWS credentials not found. Configure an IAM role (recommended) or set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
+                )
 
     def _get_url_hash(self, url: str) -> str:
         """Generate MD5 hash from URL for caching"""
@@ -33,8 +54,13 @@ class ImageProcessingService:
             return False
 
     def _get_s3_url(self, s3_key: str) -> str:
-        """Generate S3 public URL"""
-        return f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{s3_key}"
+        """
+        Generate a public S3 URL for the given object key.
+        Note: This relies on objects being publicly readable (bucket policy/ACL) or fronted by a public distribution.
+        """
+        # Encode each path segment to produce a safe URL path without encoding slashes
+        encoded_key = "/".join(quote(segment, safe="") for segment in s3_key.split("/"))
+        return f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{encoded_key}"
 
     async def create_composite_image(self, products: List[ProductItem]) -> str:
         try:
@@ -69,15 +95,13 @@ class ImageProcessingService:
                 }
             )
 
-            s3_url = f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{s3_key}"
+            return self._get_s3_url(s3_key)
 
-            return s3_url
-
-        except ClientError as e:
-            print(f"S3 upload error: {str(e)}")
+        except ClientError:
+            logger.exception("S3 upload error")
             return None
-        except Exception as e:
-            print(f"Image processing error: {str(e)}")
+        except Exception:
+            logger.exception("Image processing error")
             return None
 
     async def _download_and_remove_bg(self, image_url: str) -> Image.Image:
@@ -91,8 +115,8 @@ class ImageProcessingService:
 
             return output_image
 
-        except Exception as e:
-            print(f"Background removal error for {image_url}: {str(e)}")
+        except Exception:
+            logger.exception(f"Background removal error for {image_url}")
             return None
 
     def _compose_images(self, processed_images: List[dict]) -> Image.Image:
@@ -168,9 +192,9 @@ class ImageProcessingService:
 
             return self._get_s3_url(s3_key)
 
-        except ClientError as e:
-            print(f"S3 upload error: {str(e)}")
+        except ClientError:
+            logger.exception("S3 upload error")
             return None
-        except Exception as e:
-            print(f"Remove background error: {str(e)}")
+        except Exception:
+            logger.exception("Remove background error")
             return None

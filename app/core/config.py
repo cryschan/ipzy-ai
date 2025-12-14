@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 
 
@@ -28,15 +28,17 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
-    AWS_ACCESS_KEY_ID: str = ""
-    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_S3_BUCKET: str = ""
     AWS_REGION: str = "ap-northeast-2"
     S3_IMAGE_PREFIX: str = "background-removed"
 
-    class Config:
-        env_file = ".env" # .env 파일의 환경 변수 사용
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+    )
 
 
 settings = Settings()

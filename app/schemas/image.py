@@ -31,7 +31,7 @@ class ImageRemoveBackgroundResponse(BaseModel):
             "examples": [
                 {
                     "success": True,
-                    "output_path": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/1c0c614bb64dbd5a34d142230b96f287.png",
+                    "output_path": "https://example-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/example.png",
                     "message": "Background removed successfully"
                 }
             ]
