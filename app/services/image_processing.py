@@ -55,8 +55,16 @@ class ImageProcessingService:
         try:
             self.s3_client.head_object(Bucket=settings.AWS_S3_BUCKET, Key=s3_key)
             return True
-        except ClientError:
-            return False
+        except ClientError as e:
+            # Only treat "not found" as False; bubble up other errors
+            resp = getattr(e, "response", {}) or {}
+            status_code = resp.get("ResponseMetadata", {}).get("HTTPStatusCode")
+            error_code = (resp.get("Error", {}) or {}).get("Code")
+            not_found_codes = {"404", "NoSuchKey", "NotFound"}
+            if status_code == 404 or (error_code in not_found_codes):
+                return False
+            logger.exception(f"S3 head_object failed for key={s3_key}")
+            raise
 
     def _get_s3_url(self, s3_key: str) -> str:
         """
