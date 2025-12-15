@@ -23,9 +23,9 @@ class ImageRemoveBackgroundRequest(BaseModel):
     }
 
 class ImageRemoveBackgroundResponse(BaseModel):
-    success: bool = Field(..., description="Whether the background removal was successful")
-    nobg_image_url: str | None = Field(None, description="Path to the output image with background removed")
-    message: str | None = Field(None, description="Status message")
+    success: bool = Field(..., description="배경 제거 성공 여부")
+    nobg_image_url: str | None = Field(None, description="배경이 제거된 이미지의 URL")
+    message: str | None = Field(None, description="상태 메시지")
 
     model_config = {
         "json_schema_extra": {
@@ -41,14 +41,14 @@ class ImageRemoveBackgroundResponse(BaseModel):
 
 
 class CompositeImageItem(BaseModel):
-    product_id: int = Field(..., description="Product ID")
-    category: str = Field(..., description="Category (TOP, BOTTOM, SHOES, OUTER, ACCESSORY)")
-    name: str = Field(..., description="Product name")
-    brand: str = Field(..., description="Brand name")
-    price: int = Field(..., description="Product price")
-    image_url: str = Field(..., description="Original image URL")
-    link_url: str = Field(..., description="Product link URL")
-    nobg_image_url: str = Field(..., description="Background-removed image URL")
+    product_id: int = Field(..., description="상품 ID")
+    category: str = Field(..., description="카테고리 (TOP, BOTTOM, SHOES, OUTER, ACCESSORY)")
+    name: str = Field(..., description="상품명")
+    brand: str = Field(..., description="브랜드명")
+    price: int = Field(..., description="상품 가격")
+    image_url: str = Field(..., description="원본 이미지 URL")
+    link_url: str = Field(..., description="상품 링크 URL")
+    nobg_image_url: str = Field(..., description="배경 제거된 이미지 URL")
 
     model_config = {
         "json_schema_extra": {
@@ -69,7 +69,7 @@ class CompositeImageItem(BaseModel):
 
 
 class CreateCompositeImageRequest(BaseModel):
-    items: List[CompositeImageItem] = Field(..., description="List of products to compose")
+    items: List[CompositeImageItem] = Field(..., description="합성에 사용할 상품 목록")
 
     model_config = {
         "json_schema_extra": {
@@ -134,30 +134,30 @@ class CreateCompositeImageRequest(BaseModel):
 
 
 class ItemPosition(BaseModel):
-    x: int = Field(..., description="X coordinate (top-left) in pixels")
-    y: int = Field(..., description="Y coordinate (top-left) in pixels")
-    width: int = Field(..., description="Width in pixels")
-    height: int = Field(..., description="Height in pixels")
+    x: int = Field(..., description="X 좌표(좌측 상단, px)")
+    y: int = Field(..., description="Y 좌표(좌측 상단, px)")
+    width: int = Field(..., description="너비(px)")
+    height: int = Field(..., description="높이(px)")
 
 
 class CompositeImageItemWithPosition(BaseModel):
-    product_id: int = Field(..., description="Product ID")
-    category: str = Field(..., description="Category")
-    name: str = Field(..., description="Product name")
-    brand: str = Field(..., description="Brand name")
-    price: int = Field(..., description="Product price")
-    link_url: str = Field(..., description="Product link URL")
-    position: ItemPosition = Field(..., description="Position in the composite image")
+    product_id: int = Field(..., description="상품 ID")
+    category: str = Field(..., description="카테고리")
+    name: str = Field(..., description="상품명")
+    brand: str = Field(..., description="브랜드명")
+    price: int = Field(..., description="상품 가격")
+    link_url: str = Field(..., description="상품 링크 URL")
+    position: ItemPosition = Field(..., description="합성 이미지 내 배치 좌표")
 
 
 class CreateCompositeImageResponse(BaseModel):
-    success: bool = Field(..., description="Whether the composite image creation was successful")
-    message: str | None = Field(None, description="Status message")
-    composite_image_url: str | None = Field(None, description="URL of the composite image")
-    image_width: int = Field(1200, description="Composite image width in pixels")
-    image_height: int = Field(1600, description="Composite image height in pixels")
-    total_price: int = Field(0, description="Total price of all items")
-    items: List[CompositeImageItemWithPosition] | None = Field(None, description="Items with their positions in the image")
+    success: bool = Field(..., description="합성 이미지 생성 성공 여부")
+    message: str | None = Field(None, description="상태 메시지")
+    composite_image_url: str | None = Field(None, description="합성 이미지 URL")
+    image_width: int = Field(1200, description="합성 이미지 가로(px)")
+    image_height: int = Field(1600, description="합성 이미지 세로(px)")
+    total_price: int = Field(0, description="모든 상품의 총가격")
+    items: List[CompositeImageItemWithPosition] | None = Field(None, description="이미지 내 각 상품의 배치 정보")
 
     model_config = {
         "json_schema_extra": {
@@ -192,9 +192,9 @@ class CreateCompositeImageResponse(BaseModel):
 
 
 class CreateCompositeJobResponse(BaseModel):
-    success: bool = Field(..., description="Whether the job was created successfully")
-    job_id: str = Field(..., description="Job ID for tracking the composite image creation")
-    message: str | None = Field(None, description="Status message")
+    success: bool = Field(..., description="작업 생성 성공 여부")
+    job_id: str = Field(..., description="합성 이미지 생성 작업 추적용 Job ID")
+    message: str | None = Field(None, description="상태 메시지")
 
     model_config = {
         "json_schema_extra": {
@@ -211,11 +211,11 @@ class CreateCompositeJobResponse(BaseModel):
 
 class CompositeJobStatus(BaseModel):
     job_id: str = Field(..., description="Job ID")
-    status: str = Field(..., description="Job status: pending, processing, completed, failed")
-    created_at: str = Field(..., description="Job creation timestamp")
-    completed_at: str | None = Field(None, description="Job completion timestamp")
-    result: CreateCompositeImageResponse | None = Field(None, description="Result data when completed")
-    error: str | None = Field(None, description="Error message if failed")
+    status: str = Field(..., description="작업 상태: pending, processing, completed, failed")
+    created_at: str = Field(..., description="작업 생성 시각")
+    completed_at: str | None = Field(None, description="작업 완료 시각")
+    result: CreateCompositeImageResponse | None = Field(None, description="완료 시 결과 데이터")
+    error: str | None = Field(None, description="실패 시 오류 메시지")
 
     model_config = {
         "json_schema_extra": {

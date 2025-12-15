@@ -41,7 +41,7 @@ async def remove_background(request: ImageRemoveBackgroundRequest):
 
 
 async def _process_composite_job(job_id: str, items):
-    """Background task to process composite image creation"""
+    """합성 이미지 생성 작업을 백그라운드에서 처리합니다."""
     try:
         job_manager.update_job_status(job_id, 'processing')
 
@@ -74,8 +74,8 @@ async def create_composite(
     background_tasks: BackgroundTasks
 ):
     """
-    Create a composite image asynchronously.
-    Returns a job_id immediately for tracking the progress.
+    합성 이미지를 비동기로 생성합니다.
+    생성된 작업을 추적할 수 있도록 즉시 job_id를 반환합니다.
     """
     try:
         if not request.items or len(request.items) == 0:
@@ -130,7 +130,7 @@ async def create_composite(
 @router.get("/composite/{job_id}", response_model=CompositeJobStatus)
 async def get_composite_status(job_id: str):
     """
-    Get the status and result of a composite image creation job.
+    합성 이미지 생성 작업의 상태와 결과를 조회합니다.
     """
     job = job_manager.get_job(job_id)
 
