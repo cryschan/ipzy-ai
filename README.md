@@ -45,8 +45,7 @@
 
 ## 📚 문서
 
-- **[아키텍처 문서](./ARCHITECTURE.md)** - 전체 시스템 설계 및 설정 가이드
-- **[Docker 가이드](./DOCKER_SETUP.md)** - Docker 설정 상세 방법
+- **[CLAUDE.md](./CLAUDE.md)** - 프로젝트 개요 및 개발 가이드
 
 ---
 
@@ -111,7 +110,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 브라우저에서 접속:
 ```
-http://localhost:8000/api/v1/docs
+http://localhost:8000/api/docs
 ```
 
 ---
@@ -123,9 +122,8 @@ ipzy-ai/
 ├── app/
 │   ├── main.py                    # FastAPI 앱
 │   ├── api/
-│   │   └── v1/
-│   │       ├── router.py
-│   │       └── endpoints/         # API 엔드포인트
+│   │   ├── router.py
+│   │   └── endpoints/             # API 엔드포인트
 │   ├── core/
 │   │   └── config.py              # 설정 관리
 │   ├── models/                    # 데이터 모델
@@ -141,7 +139,7 @@ ipzy-ai/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .env.example
-├── ARCHITECTURE.md                # 아키텍처 문서
+├── CLAUDE.md                      # 프로젝트 문서
 ├── SETUP_STATUS.md                # 설정 현황
 └── README.md
 ```
@@ -171,7 +169,7 @@ curl http://localhost:8000/health
 
 ### 상품 분석 (Webhook)
 ```bash
-curl -X POST http://localhost:8000/api/v1/analyze/batch \
+curl -X POST http://localhost:8000/api/analyze/batch \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-backend-api-key" \
   -d '{"product_ids": ["prod_001"]}'
@@ -179,7 +177,7 @@ curl -X POST http://localhost:8000/api/v1/analyze/batch \
 
 ### 코디 추천
 ```bash
-curl -X POST http://localhost:8000/api/v1/recommendations \
+curl -X POST http://localhost:8000/api/recommendations \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "user_123",
@@ -204,10 +202,10 @@ curl -X POST http://localhost:8000/api/v1/recommendations \
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/health` | 헬스 체크 |
-| POST | `/api/v1/analyze/batch` | 상품 배치 분석 |
-| POST | `/api/v1/users/analyze-quiz` | 퀴즈 분석 |
-| POST | `/api/v1/recommendations` | 코디 추천 |
-| POST | `/api/v1/feedback/like` | 피드백 저장 |
+| POST | `/api/analyze/batch` | 상품 배치 분석 |
+| POST | `/api/users/analyze-quiz` | 퀴즈 분석 |
+| POST | `/api/recommendations` | 코디 추천 |
+| POST | `/api/feedback/like` | 피드백 저장 |
 
 ---
 
@@ -260,4 +258,4 @@ Private Repository
 
 **현재 상태**: 🚧 개발 중 (설정 완료, 구현 대기)
 
-자세한 현황은 [ARCHITECTURE.md](./ARCHITECTURE.md#-현재-진행-상황-및-설정-가이드)를 참고하세요.
+자세한 현황은 [CLAUDE.md](./CLAUDE.md)를 참고하세요.

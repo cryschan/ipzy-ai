@@ -1,15 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1.router import api_router
+from app.api.router import api_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Fashion Coordination AI Recommendation API",
     version="1.0.0",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc"
+    openapi_url=f"{settings.API_PREFIX}/openapi.json",
+    docs_url=f"{settings.API_PREFIX}/docs",
+    redoc_url=f"{settings.API_PREFIX}/redoc"
 )
 
 app.add_middleware(
@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router, prefix=settings.API_PREFIX)
 
 
 @app.get("/")
@@ -28,7 +28,7 @@ async def root():
     return {
         "message": "Fashion Coordination AI API",
         "version": "1.0.0",
-        "docs": f"{settings.API_V1_STR}/docs"
+        "docs": f"{settings.API_PREFIX}/docs"
     }
 
 

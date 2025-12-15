@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import image
+from app.api.endpoints import image
 
 api_router = APIRouter()
 
