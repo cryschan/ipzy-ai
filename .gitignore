@@ -64,3 +64,7 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Claude
+.claude/
+.mcp.json
