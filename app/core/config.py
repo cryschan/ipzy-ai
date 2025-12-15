@@ -4,7 +4,7 @@ from typing import List
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Fashion Coordination AI"
-    API_V1_STR: str = "/api/v1"
+    API_PREFIX: str = "/api"
 
     ALLOWED_ORIGINS: List[str] = ["*"]
 
