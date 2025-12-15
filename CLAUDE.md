@@ -17,6 +17,7 @@
 
 ```bash
 cp .env.example .env              # 환경변수 설정
+docker network create ipzy-network # Docker 네트워크 생성
 docker compose up -d              # 컨테이너 실행
 # 또는 로컬 실행
 python -m venv venv
@@ -68,7 +69,7 @@ docker compose logs -f ipzy-ai    # 로그 확인
 
 ## 백엔드 연동
 
-- 백엔드 프로젝트: `/Users/chan/workspace/ipzy-backend`
+- 백엔드 프로젝트: `ipzy-backend` (동일 조직의 별도 저장소)
 - 동일한 PostgreSQL DB 공유 (ipzy_db, 포트 5432)
 - 백엔드가 퀴즈 응답을 Python API로 전송
 - AI 서버가 직접 접근하는 테이블:
