@@ -1,11 +1,11 @@
 from PIL import Image
 from rembg import remove
-import requests
 from io import BytesIO
 from typing import List
 import uuid
 import hashlib
 import boto3
+import httpx
 from urllib.parse import quote
 from botocore.exceptions import ClientError
 from app.core.config import settings
@@ -85,10 +85,12 @@ class ImageProcessingService:
     async def _download_image(self, image_url: str) -> Image.Image:
         """Download image from URL without background removal"""
         try:
-            response = requests.get(image_url, timeout=10)
-            response.raise_for_status()
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                response = await client.get(image_url)
+                response.raise_for_status()
+                content_bytes = response.content
 
-            image = Image.open(BytesIO(response.content))
+            image = Image.open(BytesIO(content_bytes))
             return image
 
         except Exception:
@@ -99,6 +101,16 @@ class ImageProcessingService:
         try:
             processed_images = []
             item_map = {}  # Map category to original item data
+
+            # Enforce uniqueness: validate duplicate categories before building map
+            categories_upper = [it.category.upper() for it in items]
+            category_counts: dict[str, int] = {}
+            for cat in categories_upper:
+                category_counts[cat] = category_counts.get(cat, 0) + 1
+            duplicates = [cat for cat, count in category_counts.items() if count > 1]
+            if duplicates:
+                logger.error(f"Duplicate categories provided: {', '.join(duplicates)}. Each category must be unique.")
+                return None
 
             for item in items:
                 # Download from nobg_image_url (already background-removed)
@@ -180,10 +192,12 @@ class ImageProcessingService:
 
     async def _download_and_remove_bg(self, image_url: str) -> Image.Image:
         try:
-            response = requests.get(image_url, timeout=10)
-            response.raise_for_status()
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                response = await client.get(image_url)
+                response.raise_for_status()
+                content_bytes = response.content
 
-            input_image = Image.open(BytesIO(response.content))
+            input_image = Image.open(BytesIO(content_bytes))
 
             output_image = remove(input_image)
 
