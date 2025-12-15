@@ -10,6 +10,7 @@ from urllib.parse import quote
 from botocore.exceptions import ClientError
 from app.core.config import settings
 from app.schemas.recommendation import ProductItem
+from app.schemas.image import CompositeImageItem
 import logging
 
 logger = logging.getLogger(__name__)
@@ -56,13 +57,19 @@ class ImageProcessingService:
             self.s3_client.head_object(Bucket=settings.AWS_S3_BUCKET, Key=s3_key)
             return True
         except ClientError as e:
-            # Only treat "not found" as False; bubble up other errors
             resp = getattr(e, "response", {}) or {}
             status_code = resp.get("ResponseMetadata", {}).get("HTTPStatusCode")
             error_code = (resp.get("Error", {}) or {}).get("Code")
-            not_found_codes = {"404", "NoSuchKey", "NotFound"}
-            if status_code == 404 or (error_code in not_found_codes):
+
+            # Treat "not found" and "forbidden" as object doesn't exist
+            # 403/Forbidden can occur when we don't have permission to check, or object doesn't exist
+            not_found_codes = {"404", "NoSuchKey", "NotFound", "403", "Forbidden"}
+            if status_code in [404, 403] or (error_code in not_found_codes):
+                if status_code == 403:
+                    logger.warning(f"S3 permission denied for key={s3_key}. Treating as cache miss.")
                 return False
+
+            # Other errors should still be raised
             logger.exception(f"S3 head_object failed for key={s3_key}")
             raise
 
@@ -75,25 +82,42 @@ class ImageProcessingService:
         encoded_key = "/".join(quote(segment, safe="") for segment in s3_key.split("/"))
         return f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{encoded_key}"
 
-    async def create_composite_image(self, products: List[ProductItem]) -> str:
+    async def _download_image(self, image_url: str) -> Image.Image:
+        """Download image from URL without background removal"""
+        try:
+            response = requests.get(image_url, timeout=10)
+            response.raise_for_status()
+
+            image = Image.open(BytesIO(response.content))
+            return image
+
+        except Exception:
+            logger.exception(f"Failed to download image from {image_url}")
+            return None
+
+    async def create_composite_image(self, items: List[CompositeImageItem]) -> str:
         try:
             processed_images = []
 
-            for product in products:
-                img = await self._download_and_remove_bg(product.image_url)
+            for item in items:
+                # Download from nobg_image_url (already background-removed)
+                img = await self._download_image(item.nobg_image_url)
                 if img:
                     processed_images.append({
                         'image': img,
-                        'category': product.category
+                        'category': item.category
                     })
+                else:
+                    logger.warning(f"Failed to download image for product {item.product_id}")
 
             if not processed_images:
+                logger.error("No images were successfully downloaded")
                 return None
 
             composite = self._compose_images(processed_images)
 
             filename = f"{uuid.uuid4()}.png"
-            s3_key = f"{settings.S3_IMAGE_PREFIX}/composite/{filename}"
+            s3_key = f"{settings.S3_COMPOSITE_PREFIX}/{filename}"
 
             buffer = BytesIO()
             composite.save(buffer, format='PNG')
@@ -137,17 +161,20 @@ class ImageProcessingService:
         canvas_height = 1600
         canvas = Image.new('RGBA', (canvas_width, canvas_height), (255, 255, 255, 0))
 
+        # 2-column layout positions
+        # LEFT: TOP (top), BOTTOM (bottom)
+        # RIGHT: OUTER (top), ACCESSORY (middle), SHOES (bottom)
         category_positions = {
-            'top': {'y': 100, 'scale': 0.4},
-            'bottom': {'y': 600, 'scale': 0.4},
-            'shoes': {'y': 1100, 'scale': 0.3},
-            'outer': {'y': 50, 'scale': 0.45},
-            'accessory': {'y': 1400, 'scale': 0.2}
+            'top': {'x': 'left', 'y': 100, 'scale': 0.4},           # 왼쪽 상단
+            'outer': {'x': 'right', 'y': 100, 'scale': 0.4},        # 오른쪽 상단
+            'bottom': {'x': 'left', 'y': 800, 'scale': 0.4},        # 왼쪽 하단
+            'accessory': {'x': 'right', 'y': 600, 'scale': 0.3},    # 오른쪽 중간
+            'shoes': {'x': 'right', 'y': 1100, 'scale': 0.35}       # 오른쪽 하단
         }
 
         for item in processed_images:
             img = item['image']
-            category = item['category']
+            category = item['category'].lower()
 
             if category not in category_positions:
                 category = 'accessory'
@@ -161,7 +188,14 @@ class ImageProcessingService:
 
             img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-            x_position = (canvas_width - new_width) // 2
+            # Calculate x position based on left/right alignment
+            if position_info['x'] == 'left':
+                # Left column: align to left quarter of canvas
+                x_position = (canvas_width // 4) - (new_width // 2)
+            else:  # 'right'
+                # Right column: align to right three-quarters of canvas
+                x_position = (canvas_width * 3 // 4) - (new_width // 2)
+
             y_position = position_info['y']
 
             if img_resized.mode == 'RGBA':

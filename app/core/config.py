@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     AWS_S3_BUCKET: str = ""
     AWS_REGION: str = "ap-northeast-2"
     S3_IMAGE_PREFIX: str = "background-removed"
+    S3_COMPOSITE_PREFIX: str = "composite"
 
     model_config = SettingsConfigDict(
         env_file=".env",
