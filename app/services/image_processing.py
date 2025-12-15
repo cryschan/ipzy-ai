@@ -17,15 +17,7 @@ logger = logging.getLogger(__name__)
 
 class ImageProcessingService:
     def __init__(self):
-        s3_client_kwargs = {
-            'region_name': settings.AWS_REGION
-        }
-        if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
-            s3_client_kwargs['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
-            s3_client_kwargs['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
-        self.s3_client = boto3.client('s3', **s3_client_kwargs)
-
-        # Early validation for clearer runtime errors
+        # Early validation for clearer startup errors (surface misconfig at boot)
         if not settings.AWS_S3_BUCKET:
             raise RuntimeError("AWS_S3_BUCKET is not configured. Set it in your environment or .env.")
 
@@ -40,6 +32,19 @@ class ImageProcessingService:
                 raise RuntimeError(
                     "AWS credentials not found. Configure an IAM role (recommended) or set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
                 )
+
+        # Build client after validation; catch initialization errors
+        s3_client_kwargs = {
+            'region_name': settings.AWS_REGION
+        }
+        if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+            s3_client_kwargs['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
+            s3_client_kwargs['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
+        try:
+            self.s3_client = boto3.client('s3', **s3_client_kwargs)
+        except Exception as exc:
+            logger.exception("Failed to initialize S3 client")
+            raise RuntimeError("Failed to initialize S3 client. Verify AWS configuration and network connectivity.") from exc
 
     def _get_url_hash(self, url: str) -> str:
         """Generate MD5 hash from URL for caching"""
@@ -166,11 +171,11 @@ class ImageProcessingService:
 
             # Check if already exists in S3
             if self._check_s3_object_exists(s3_key):
-                print(f"Cache hit! Returning existing image for: {image_url}")
+                logger.info(f"Cache hit! Returning existing image for: {image_url}")
                 return self._get_s3_url(s3_key)
 
             # Cache miss - process image
-            print(f"Cache miss. Processing new image: {image_url}")
+            logger.info(f"Cache miss. Processing new image: {image_url}")
             output_image = await self._download_and_remove_bg(image_url)
 
             if not output_image:
