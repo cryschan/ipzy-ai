@@ -95,9 +95,10 @@ class ImageProcessingService:
             logger.exception(f"Failed to download image from {image_url}")
             return None
 
-    async def create_composite_image(self, items: List[CompositeImageItem]) -> str:
+    async def create_composite_image(self, items: List[CompositeImageItem]) -> dict:
         try:
             processed_images = []
+            item_map = {}  # Map category to original item data
 
             for item in items:
                 # Download from nobg_image_url (already background-removed)
@@ -105,8 +106,11 @@ class ImageProcessingService:
                 if img:
                     processed_images.append({
                         'image': img,
-                        'category': item.category
+                        'category': item.category,
+                        'product_id': item.product_id
                     })
+                    # Store original item data for later
+                    item_map[item.category.upper()] = item
                 else:
                     logger.warning(f"Failed to download image for product {item.product_id}")
 
@@ -114,7 +118,7 @@ class ImageProcessingService:
                 logger.error("No images were successfully downloaded")
                 return None
 
-            composite = self._compose_images(processed_images)
+            composite, positions = self._compose_images(processed_images)
 
             filename = f"{uuid.uuid4()}.png"
             s3_key = f"{settings.S3_COMPOSITE_PREFIX}/{filename}"
@@ -132,7 +136,40 @@ class ImageProcessingService:
                 }
             )
 
-            return self._get_s3_url(s3_key)
+            composite_url = self._get_s3_url(s3_key)
+
+            # Combine position data with original item data
+            items_with_positions = []
+            total_price = 0
+
+            for pos in positions:
+                category = pos['category'].upper()
+                if category in item_map:
+                    original_item = item_map[category]
+                    items_with_positions.append({
+                        'product_id': original_item.product_id,
+                        'category': original_item.category,
+                        'name': original_item.name,
+                        'brand': original_item.brand,
+                        'price': original_item.price,
+                        'link_url': original_item.link_url,
+                        'position': {
+                            'x': pos['x'],
+                            'y': pos['y'],
+                            'width': pos['width'],
+                            'height': pos['height']
+                        }
+                    })
+                    # Add to total price
+                    total_price += original_item.price
+
+            return {
+                'composite_url': composite_url,
+                'items': items_with_positions,
+                'total_price': total_price,
+                'image_width': 1200,
+                'image_height': 1600
+            }
 
         except ClientError:
             logger.exception("S3 upload error")
@@ -156,7 +193,7 @@ class ImageProcessingService:
             logger.exception(f"Background removal error for {image_url}")
             return None
 
-    def _compose_images(self, processed_images: List[dict]) -> Image.Image:
+    def _compose_images(self, processed_images: List[dict]) -> tuple[Image.Image, List[dict]]:
         canvas_width = 1200
         canvas_height = 1600
         canvas = Image.new('RGBA', (canvas_width, canvas_height), (255, 255, 255, 0))
@@ -171,6 +208,8 @@ class ImageProcessingService:
             'accessory': {'x': 'right', 'y': 600, 'scale': 0.3},    # 오른쪽 중간
             'shoes': {'x': 'right', 'y': 1100, 'scale': 0.35}       # 오른쪽 하단
         }
+
+        positions = []  # Track positions for each item
 
         for item in processed_images:
             img = item['image']
@@ -203,7 +242,17 @@ class ImageProcessingService:
             else:
                 canvas.paste(img_resized, (x_position, y_position))
 
-        return canvas
+            # Store position data
+            positions.append({
+                'category': item['category'],
+                'product_id': item.get('product_id'),
+                'x': x_position,
+                'y': y_position,
+                'width': new_width,
+                'height': new_height
+            })
+
+        return canvas, positions
 
     async def remove_background(self, image_url: str) -> str:
         try:
