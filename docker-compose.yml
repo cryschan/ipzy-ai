@@ -68,5 +68,6 @@ networks:
     external: true
 
 volumes:
+  postgres_data:
   ai_data:
   ai_outputs:

@@ -27,7 +27,7 @@ uvicorn app.main:app --reload
 
 ## 패키지 구조
 
-```
+```text
 app/
 ├── main.py                  # FastAPI 앱 진입점
 ├── core/
@@ -63,8 +63,8 @@ docker compose logs -f ipzy-ai    # 로그 확인
 
 ## API 문서
 
-Swagger UI: http://localhost:8000/api/docs
-ReDoc: http://localhost:8000/api/redoc
+- Swagger UI: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+- ReDoc: [http://localhost:8000/api/redoc](http://localhost:8000/api/redoc)
 
 ## 백엔드 연동
 
@@ -77,7 +77,7 @@ ReDoc: http://localhost:8000/api/redoc
 
 ## 추천 흐름
 
-```
+```text
 백엔드 → Python: POST /api/recommend {
     "location": "office",
     "style": "classic",
