@@ -1,7 +1,5 @@
 ## Summary (요약)
 
-<!-- 이 PR의 목적과 주요 변경 사항을 간단히 설명하세요. -->
-
 ## PR Checklist
 
 - [ ] 브랜치 이름 규칙 확인 (feature/_, fix/_ 등)
@@ -13,10 +11,6 @@
 
 ## Additional Notes (추가 사항)
 
-<!-- 리뷰어가 알아야 할 추가 정보나 특이사항을 기술하세요. -->
-
 ## Merge 방식
 
-일반 Merge 부탁드립니다!
-
-<!-- 또는: squash merge / rebase merge 부탁드립니다. -->
+Squash Merge 부탁드립니다!
