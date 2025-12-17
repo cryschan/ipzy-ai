@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List
 
-IMAGE_URL = "https://image.msscdn.net/thumbnails/images/goods_img/20250828/5373229/5373229_17563554907585_big.jpg?w=1200"
+IMAGE_URL = "https://image.msscdn.net/thumbnails/images/goods_img/20250828/5373229/5373229_17563554907585_big.jpg"
 
 class ImageRemoveBackgroundRequest(BaseModel):
     image_url: str = Field(
@@ -34,6 +34,82 @@ class ImageRemoveBackgroundResponse(BaseModel):
                     "success": True,
                     "nobg_image_url": "https://example-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/example.png",
                     "message": "Background removed successfully"
+                }
+            ]
+        }
+    }
+
+
+class BatchRemoveBackgroundRequest(BaseModel):
+    image_urls: List[str] = Field(
+        ...,
+        description="배경을 제거할 이미지 URL 목록 (최대 10개)",
+        min_length=1,
+        max_length=10
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "image_urls": [
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20250828/5373229/5373229_17563554907585_big.jpg",
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20240515/4073073/4073073_16848382344714_big.jpg",
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20240412/3987654/3987654_17128901234567_big.jpg",
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20240310/3876543/3876543_17091234567890_big.jpg",
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20240205/3765432/3765432_17083456789012_big.jpg",
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20240115/3654321/3654321_17075678901234_big.jpg",
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20231220/3543210/3543210_17067890123456_big.jpg",
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20231105/3432109/3432109_17059012345678_big.jpg",
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20231001/3321098/3321098_17051234567890_big.jpg",
+                        "https://image.msscdn.net/thumbnails/images/goods_img/20230820/3210987/3210987_17043456789012_big.jpg"
+                    ]
+                }
+            ]
+        }
+    }
+
+
+class BatchRemoveBackgroundItem(BaseModel):
+    original_url: str = Field(..., description="원본 이미지 URL")
+    nobg_image_url: str | None = Field(None, description="배경이 제거된 이미지의 URL")
+    success: bool = Field(..., description="처리 성공 여부")
+    error: str | None = Field(None, description="실패 시 에러 메시지")
+
+
+class BatchRemoveBackgroundResponse(BaseModel):
+    success: bool = Field(..., description="전체 배치 처리 성공 여부")
+    results: List[BatchRemoveBackgroundItem] = Field(..., description="각 이미지별 처리 결과")
+    total_count: int = Field(..., description="전체 이미지 개수")
+    success_count: int = Field(..., description="성공한 이미지 개수")
+    failed_count: int = Field(..., description="실패한 이미지 개수")
+    processing_time: float = Field(..., description="총 처리 시간(초)")
+    message: str | None = Field(None, description="상태 메시지")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "success": True,
+                    "results": [
+                        {
+                            "original_url": IMAGE_URL,
+                            "nobg_image_url": "https://example-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/abc123.png",
+                            "success": True,
+                            "error": None
+                        },
+                        {
+                            "original_url": "https://invalid-url.com/image.jpg",
+                            "nobg_image_url": None,
+                            "success": False,
+                            "error": "Failed to download image"
+                        }
+                    ],
+                    "total_count": 2,
+                    "success_count": 1,
+                    "failed_count": 1,
+                    "processing_time": 3.5,
+                    "message": "Batch processing completed: 1 succeeded, 1 failed"
                 }
             ]
         }

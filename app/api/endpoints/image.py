@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from app.schemas.image import (
     ImageRemoveBackgroundRequest,
     ImageRemoveBackgroundResponse,
+    BatchRemoveBackgroundRequest,
+    BatchRemoveBackgroundResponse,
     CreateCompositeImageRequest,
     CreateCompositeJobResponse,
     CompositeJobStatus
@@ -9,6 +11,7 @@ from app.schemas.image import (
 from app.services.image_processing import ImageProcessingService
 from app.services.job_manager import job_manager
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +21,12 @@ image_service = ImageProcessingService()
 @router.post("/remove-background", response_model=ImageRemoveBackgroundResponse)
 async def remove_background(request: ImageRemoveBackgroundRequest):
     try:
-        nobg_image_url = await image_service.remove_background(request.image_url)
+        nobg_image_url, error_msg = await image_service.remove_background(request.image_url)
 
         if not nobg_image_url:
             raise HTTPException(
                 status_code=500,
-                detail="Failed to remove background from image"
+                detail=error_msg or "Failed to remove background from image"
             )
 
         return ImageRemoveBackgroundResponse(
@@ -37,6 +40,51 @@ async def remove_background(request: ImageRemoveBackgroundRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error processing image: {str(e)}"
+        ) from e
+
+
+@router.post("/remove-background/batch", response_model=BatchRemoveBackgroundResponse)
+async def remove_background_batch(request: BatchRemoveBackgroundRequest):
+    """
+    여러 이미지의 배경을 한 번에 제거합니다 (최대 10개).
+    모든 이미지를 병렬로 처리하여 처리 시간을 최소화합니다.
+    """
+    try:
+        start_time = time.time()
+
+        # 배치 처리 실행
+        results = await image_service.remove_background_batch(request.image_urls)
+
+        # 처리 시간 계산
+        processing_time = time.time() - start_time
+
+        # 통계 계산
+        total_count = len(results)
+        success_count = sum(1 for r in results if r['success'])
+        failed_count = total_count - success_count
+
+        # 전체 성공 여부 (하나라도 성공하면 True)
+        overall_success = success_count > 0
+
+        message = f"Batch processing completed: {success_count} succeeded, {failed_count} failed"
+
+        return BatchRemoveBackgroundResponse(
+            success=overall_success,
+            results=results,
+            total_count=total_count,
+            success_count=success_count,
+            failed_count=failed_count,
+            processing_time=round(processing_time, 2),
+            message=message
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Batch background removal error")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing batch: {str(e)}"
         ) from e
 
 

@@ -4,7 +4,7 @@ from app.services.image_processing import ImageProcessingService
 # Manual smoke script: invokes real network and S3. Run from project root:
 #   python scripts/remove_bg_smoke.py
 # Ensure AWS credentials and AWS_S3_BUCKET are configured if you expect upload.
-IMAGE_URL = "https://image.msscdn.net/thumbnails/images/goods_img/20250828/5373229/5373229_17563554907585_big.jpg?w=1200"
+IMAGE_URL = "https://image.msscdn.net/thumbnails/images/goods_img/20250828/5373229/5373229_17563554907585_big.jpg"
 
 
 async def run(image_url: str):
