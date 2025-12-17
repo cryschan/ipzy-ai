@@ -35,7 +35,6 @@ services:
 
       # API Keys
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
 
       # Backend Integration
       - BACKEND_API_URL=${BACKEND_API_URL:-http://ipzy-app:8080}

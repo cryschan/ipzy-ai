@@ -3,35 +3,58 @@
 퀴즈 답변(occasion + style)을 DB의 primary_style로 매핑합니다.
 """
 
-from typing import Dict, Tuple, List
-
+from typing import Dict, List, Tuple
 
 # (occasion, style) → [primary_style 리스트]
 # 의류 스타일: hip_hop, minimalist, street, gorpcore, amekaji, cityboy
 STYLE_MAPPING: Dict[Tuple[str, str], List[str]] = {
     # 회사 (work)
-    ("work", "clean"): ["minimalist", "cityboy"],      # 회사 + 깔끔하게 → 미니멀, 시티보이
-    ("work", "comfortable"): ["minimalist", "amekaji"], # 회사 + 편하게 → 미니멀, 아메카지
-    ("work", "stylish"): ["cityboy", "minimalist"],     # 회사 + 멋있게 → 시티보이, 미니멀
-    ("work", "hip"): ["street", "hip_hop"],             # 회사 + 힙하게 → 스트릿, 힙합
-
+    ("work", "clean"): ["minimalist", "cityboy"],  # 회사 + 깔끔하게 → 미니멀, 시티보이
+    ("work", "comfortable"): [
+        "minimalist",
+        "amekaji",
+    ],  # 회사 + 편하게 → 미니멀, 아메카지
+    ("work", "stylish"): ["cityboy", "minimalist"],  # 회사 + 멋있게 → 시티보이, 미니멀
+    ("work", "hip"): ["street", "hip_hop"],  # 회사 + 힙하게 → 스트릿, 힙합
     # 데이트 (date)
-    ("date", "clean"): ["minimalist", "cityboy"],       # 데이트 + 깔끔하게 → 미니멀, 시티보이
-    ("date", "comfortable"): ["minimalist", "amekaji"], # 데이트 + 편하게 → 미니멀, 아메카지
-    ("date", "stylish"): ["cityboy", "minimalist"],     # 데이트 + 멋있게 → 시티보이, 미니멀
-    ("date", "hip"): ["street", "hip_hop"],             # 데이트 + 힙하게 → 스트릿, 힙합
-
+    ("date", "clean"): [
+        "minimalist",
+        "cityboy",
+    ],  # 데이트 + 깔끔하게 → 미니멀, 시티보이
+    ("date", "comfortable"): [
+        "minimalist",
+        "amekaji",
+    ],  # 데이트 + 편하게 → 미니멀, 아메카지
+    ("date", "stylish"): [
+        "cityboy",
+        "minimalist",
+    ],  # 데이트 + 멋있게 → 시티보이, 미니멀
+    ("date", "hip"): ["street", "hip_hop"],  # 데이트 + 힙하게 → 스트릿, 힙합
     # 소개팅/모임 (meeting)
-    ("meeting", "clean"): ["minimalist", "cityboy"],    # 모임 + 깔끔하게 → 미니멀, 시티보이
-    ("meeting", "comfortable"): ["minimalist", "amekaji"], # 모임 + 편하게 → 미니멀, 아메카지
-    ("meeting", "stylish"): ["cityboy", "minimalist"],  # 모임 + 멋있게 → 시티보이, 미니멀
-    ("meeting", "hip"): ["street", "hip_hop"],          # 모임 + 힙하게 → 스트릿, 힙합
-
+    ("meeting", "clean"): [
+        "minimalist",
+        "cityboy",
+    ],  # 모임 + 깔끔하게 → 미니멀, 시티보이
+    ("meeting", "comfortable"): [
+        "minimalist",
+        "amekaji",
+    ],  # 모임 + 편하게 → 미니멀, 아메카지
+    ("meeting", "stylish"): [
+        "cityboy",
+        "minimalist",
+    ],  # 모임 + 멋있게 → 시티보이, 미니멀
+    ("meeting", "hip"): ["street", "hip_hop"],  # 모임 + 힙하게 → 스트릿, 힙합
     # 외출 (outdoor)
-    ("outdoor", "clean"): ["minimalist", "gorpcore"],   # 외출 + 깔끔하게 → 미니멀, 고프코어
-    ("outdoor", "comfortable"): ["gorpcore", "street"], # 외출 + 편하게 → 고프코어, 스트릿
-    ("outdoor", "stylish"): ["street", "cityboy"],      # 외출 + 멋있게 → 스트릿, 시티보이
-    ("outdoor", "hip"): ["hip_hop", "street"],          # 외출 + 힙하게 → 힙합, 스트릿
+    ("outdoor", "clean"): [
+        "minimalist",
+        "gorpcore",
+    ],  # 외출 + 깔끔하게 → 미니멀, 고프코어
+    ("outdoor", "comfortable"): [
+        "gorpcore",
+        "street",
+    ],  # 외출 + 편하게 → 고프코어, 스트릿
+    ("outdoor", "stylish"): ["street", "cityboy"],  # 외출 + 멋있게 → 스트릿, 시티보이
+    ("outdoor", "hip"): ["hip_hop", "street"],  # 외출 + 힙하게 → 힙합, 스트릿
 }
 
 
@@ -59,21 +82,21 @@ OCCASION_KR = {
     "work": "회사",
     "date": "데이트",
     "meeting": "소개팅/모임",
-    "outdoor": "외출"
+    "outdoor": "외출",
 }
 
 STYLE_KR = {
     "clean": "깔끔하게",
     "comfortable": "편하게",
     "stylish": "멋있게",
-    "hip": "힙하게"
+    "hip": "힙하게",
 }
 
 BODY_TYPE_KR = {
     "none": "체형 고민 없음",
     "chubby": "통통한 편",
     "thin": "마른 편",
-    "height": "키 고민"
+    "height": "키 고민",
 }
 
 
@@ -100,28 +123,25 @@ def format_for_llm(occasion: str, style: str, body_type: str) -> str:
 # DB의 신발 스타일: sneakers, boots, dress_shoes, loafers, sandals
 SHOES_STYLE_MAPPING: Dict[Tuple[str, str], List[str]] = {
     # 회사 (work)
-    ("work", "clean"): ["dress_shoes", "loafers"],      # 회사 + 깔끔 → 구두, 로퍼
-    ("work", "comfortable"): ["sneakers", "loafers"],   # 회사 + 편한 → 스니커즈, 로퍼
-    ("work", "stylish"): ["loafers", "dress_shoes"],    # 회사 + 세련 → 로퍼, 구두
-    ("work", "hip"): ["sneakers"],                      # 회사 + 힙 → 스니커즈
-
+    ("work", "clean"): ["dress_shoes", "loafers"],  # 회사 + 깔끔 → 구두, 로퍼
+    ("work", "comfortable"): ["sneakers", "loafers"],  # 회사 + 편한 → 스니커즈, 로퍼
+    ("work", "stylish"): ["loafers", "dress_shoes"],  # 회사 + 세련 → 로퍼, 구두
+    ("work", "hip"): ["sneakers"],  # 회사 + 힙 → 스니커즈
     # 데이트 (date)
-    ("date", "clean"): ["loafers", "dress_shoes"],      # 데이트 + 깔끔 → 로퍼, 구두
-    ("date", "comfortable"): ["sneakers"],              # 데이트 + 편한 → 스니커즈
-    ("date", "stylish"): ["loafers", "sneakers"],       # 데이트 + 세련 → 로퍼, 스니커즈
-    ("date", "hip"): ["sneakers"],                      # 데이트 + 힙 → 스니커즈
-
+    ("date", "clean"): ["loafers", "dress_shoes"],  # 데이트 + 깔끔 → 로퍼, 구두
+    ("date", "comfortable"): ["sneakers"],  # 데이트 + 편한 → 스니커즈
+    ("date", "stylish"): ["loafers", "sneakers"],  # 데이트 + 세련 → 로퍼, 스니커즈
+    ("date", "hip"): ["sneakers"],  # 데이트 + 힙 → 스니커즈
     # 소개팅/모임 (meeting)
-    ("meeting", "clean"): ["loafers", "dress_shoes"],   # 모임 + 깔끔 → 로퍼, 구두
-    ("meeting", "comfortable"): ["sneakers"],           # 모임 + 편한 → 스니커즈
-    ("meeting", "stylish"): ["loafers", "sneakers"],    # 모임 + 세련 → 로퍼, 스니커즈
-    ("meeting", "hip"): ["sneakers"],                   # 모임 + 힙 → 스니커즈
-
+    ("meeting", "clean"): ["loafers", "dress_shoes"],  # 모임 + 깔끔 → 로퍼, 구두
+    ("meeting", "comfortable"): ["sneakers"],  # 모임 + 편한 → 스니커즈
+    ("meeting", "stylish"): ["loafers", "sneakers"],  # 모임 + 세련 → 로퍼, 스니커즈
+    ("meeting", "hip"): ["sneakers"],  # 모임 + 힙 → 스니커즈
     # 외출 (outdoor)
-    ("outdoor", "clean"): ["sneakers"],                 # 외출 + 깔끔 → 스니커즈
-    ("outdoor", "comfortable"): ["sneakers", "sandals"], # 외출 + 편한 → 스니커즈, 샌들
-    ("outdoor", "stylish"): ["sneakers"],               # 외출 + 세련 → 스니커즈
-    ("outdoor", "hip"): ["sneakers"],                   # 외출 + 힙 → 스니커즈
+    ("outdoor", "clean"): ["sneakers"],  # 외출 + 깔끔 → 스니커즈
+    ("outdoor", "comfortable"): ["sneakers", "sandals"],  # 외출 + 편한 → 스니커즈, 샌들
+    ("outdoor", "stylish"): ["sneakers"],  # 외출 + 세련 → 스니커즈
+    ("outdoor", "hip"): ["sneakers"],  # 외출 + 힙 → 스니커즈
 }
 
 # 신발 기본 스타일 (매핑이 없을 경우)

@@ -3,24 +3,24 @@
 전체 추천 플로우를 통합 관리
 """
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
-from fastapi import HTTPException
-from app.schemas.quiz_recommendation import (
-    QuizRecommendationRequest,
-    QuizRecommendationResponse,
-    OutfitRecommendationDto,
-    OutfitResultDto,
-    RecommendedItemDto,
-    ItemPositionDto
-)
-from app.schemas.image import CompositeImageItem
-from app.services.product_service import ProductService
-from app.services.llm_coordinator import LLMCoordinatorService
-from app.services.image_processing import ImageProcessingService
-from app.services.style_mapping import OCCASION_KR, STYLE_KR
-from app.models.product import Product
 import logging
+from typing import List
+
+from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.product import Product
+from app.schemas.image import CompositeImageItem
+from app.schemas.quiz_recommendation import (ItemPositionDto,
+                                             OutfitRecommendationDto,
+                                             OutfitResultDto,
+                                             QuizRecommendationRequest,
+                                             QuizRecommendationResponse,
+                                             RecommendedItemDto)
+from app.services.image_processing import ImageProcessingService
+from app.services.llm_coordinator import LLMCoordinatorService
+from app.services.product_service import ProductService
+from app.services.style_mapping import OCCASION_KR
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +35,7 @@ class QuizRecommendationService:
         self.image_service = ImageProcessingService()
 
     async def generate_recommendations(
-        self,
-        request: QuizRecommendationRequest
+        self, request: QuizRecommendationRequest
     ) -> QuizRecommendationResponse:
         """
         퀴즈 답변을 기반으로 코디를 추천합니다.
@@ -58,7 +57,7 @@ class QuizRecommendationService:
             occasion=quiz_data["occasion"],
             style=quiz_data["style"],
             budget=quiz_data["budget"],
-            limit_per_category=10
+            limit_per_category=10,
         )
 
         # 후보가 없으면 404 에러
@@ -67,7 +66,7 @@ class QuizRecommendationService:
             logger.error("No product candidates found")
             raise HTTPException(
                 status_code=404,
-                detail="해당 조건에 맞는 상품이 없습니다. 다른 옵션을 선택해주세요."
+                detail="해당 조건에 맞는 상품이 없습니다. 다른 옵션을 선택해주세요.",
             )
 
         logger.info(f"Found {total_candidates} total product candidates")
@@ -79,7 +78,7 @@ class QuizRecommendationService:
             style=quiz_data["style"],
             body_type=quiz_data["body_type"],
             budget=quiz_data["budget"],
-            num_outfits=3  # 3개 추천
+            num_outfits=3,  # 3개 추천
         )
 
         logger.info(f"LLM selected {len(selected_outfits)} outfits")
@@ -91,7 +90,7 @@ class QuizRecommendationService:
                 outfit=outfit,
                 display_order=i,
                 occasion=quiz_data["occasion"],
-                style=quiz_data["style"]
+                style=quiz_data["style"],
             )
             outfit_dtos.append(outfit_dto)
 
@@ -111,7 +110,7 @@ class QuizRecommendationService:
             "occasion": "outdoor",  # 기본값
             "style": "comfortable",  # 기본값
             "body_type": "none",  # 기본값
-            "budget": 300000  # 기본값 30만원
+            "budget": 300000,  # 기본값 30만원
         }
 
         for answer in answers:
@@ -141,11 +140,7 @@ class QuizRecommendationService:
         return result
 
     async def _convert_to_outfit_dto(
-        self,
-        outfit: dict,
-        display_order: int,
-        occasion: str,
-        style: str
+        self, outfit: dict, display_order: int, occasion: str, style: str
     ) -> OutfitRecommendationDto:
         """
         선택된 코디를 OutfitRecommendationDto로 변환합니다 (PR #30 신규 구조 + 이미지 합성).
@@ -179,7 +174,7 @@ class QuizRecommendationService:
                         price=product.price,
                         image_url=product.image_url,
                         link_url=product.purchase_url if product.purchase_url else "",
-                        nobg_image_url=product.removed_background_image_url
+                        nobg_image_url=product.removed_background_image_url,
                     )
                 )
 
@@ -187,9 +182,13 @@ class QuizRecommendationService:
         composite_result = None
         if composite_items:
             try:
-                composite_result = await self.image_service.create_composite_image(composite_items)
+                composite_result = await self.image_service.create_composite_image(
+                    composite_items
+                )
                 if composite_result:
-                    logger.info(f"Image composition succeeded: {composite_result['composite_url']}")
+                    logger.info(
+                        f"Image composition succeeded: {composite_result['composite_url']}"
+                    )
                 else:
                     logger.warning("Image composition returned None")
             except Exception as e:
@@ -198,13 +197,13 @@ class QuizRecommendationService:
 
         # 3. position 정보 매핑
         position_map = {}  # product_id -> ItemPositionDto
-        if composite_result and composite_result.get('items'):
-            for item in composite_result['items']:
-                position_map[item['product_id']] = ItemPositionDto(
-                    x=item['position']['x'],
-                    y=item['position']['y'],
-                    width=item['position']['width'],
-                    height=item['position']['height']
+        if composite_result and composite_result.get("items"):
+            for item in composite_result["items"]:
+                position_map[item["product_id"]] = ItemPositionDto(
+                    x=item["position"]["x"],
+                    y=item["position"]["y"],
+                    width=item["position"]["width"],
+                    height=item["position"]["height"],
                 )
 
         # 4. DTO 생성 (position 포함)
@@ -223,7 +222,7 @@ class QuizRecommendationService:
                     price=product.price,
                     image_url=product.removed_background_image_url,
                     link_url=product.purchase_url if product.purchase_url else "",
-                    position=position
+                    position=position,
                 )
                 items_dto.append(item_dto)
                 total_price += product.price
@@ -236,11 +235,13 @@ class QuizRecommendationService:
         result = OutfitResultDto(
             success=True,
             message="추천 완료",
-            composite_image_url=composite_result['composite_url'] if composite_result else None,
-            image_width=composite_result['image_width'] if composite_result else None,
-            image_height=composite_result['image_height'] if composite_result else None,
+            composite_image_url=(
+                composite_result["composite_url"] if composite_result else None
+            ),
+            image_width=composite_result["image_width"] if composite_result else None,
+            image_height=composite_result["image_height"] if composite_result else None,
             total_price=total_price,
-            items=items_dto
+            items=items_dto,
         )
 
         # 6. OutfitRecommendationDto 생성 (최상위)
@@ -251,32 +252,11 @@ class QuizRecommendationService:
             style=style_kr,
             reason=outfit["reason"],
             status="completed",  # 동기 처리이므로 항상 completed
-            job_id=None,         # 동기 처리이므로 None
-            created_at=None,     # 동기 처리이므로 None
-            completed_at=None,   # 동기 처리이므로 None
+            job_id=None,  # 동기 처리이므로 None
+            created_at=None,  # 동기 처리이므로 None
+            completed_at=None,  # 동기 처리이므로 None
             result=result,
-            error=None
-        )
-
-    def _product_to_item_dto(self, product: Product) -> RecommendedItemDto:
-        """
-        Product 모델을 RecommendedItemDto로 변환합니다 (PR #30 신규 구조).
-
-        Args:
-            product: Product 모델
-
-        Returns:
-            RecommendedItemDto
-        """
-        return RecommendedItemDto(
-            product_id=product.id,
-            category=product.category,
-            name=product.name,
-            brand=product.brand.name if product.brand else "Unknown",
-            price=product.price,
-            image_url=product.removed_background_image_url,
-            link_url=product.purchase_url if product.purchase_url else "",
-            position=None  # 이미지 합성 후 좌표 정보 추가 예정
+            error=None,
         )
 
     def _get_style_kr(self, style: str) -> str:
@@ -285,6 +265,6 @@ class QuizRecommendationService:
             "clean": "깔끔",
             "comfortable": "편안",
             "stylish": "세련",
-            "hip": "힙"
+            "hip": "힙",
         }
         return style_kr_map.get(style.lower(), style)

@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class LocationEnum(str, Enum):
@@ -31,7 +32,9 @@ class BodyTypeEnum(str, Enum):
 class RecommendationRequest(BaseModel):
     location: LocationEnum = Field(..., description="장소 (예: office, casual, date)")
     style: StyleEnum = Field(..., description="스타일 (예: classic, modern, street)")
-    body_type: BodyTypeEnum = Field(..., description="체형 (예: slim, regular, athletic)")
+    body_type: BodyTypeEnum = Field(
+        ..., description="체형 (예: slim, regular, athletic)"
+    )
     budget_min: int = Field(..., ge=0, description="최소 예산 (원)")
     budget_max: int = Field(..., ge=0, description="최대 예산 (원)")
     gender: str = Field(..., description="성별 (male/female/unisex)")
@@ -46,7 +49,7 @@ class RecommendationRequest(BaseModel):
                 "budget_min": 100000,
                 "budget_max": 500000,
                 "gender": "male",
-                "additional_preferences": "편안한 착용감 선호"
+                "additional_preferences": "편안한 착용감 선호",
             }
         }
 
@@ -88,14 +91,14 @@ class RecommendationResponse(BaseModel):
                                 "category": "top",
                                 "price": 89000,
                                 "brand": "Brand A",
-                                "image_url": "https://example.com/shirt.jpg"
+                                "image_url": "https://example.com/shirt.jpg",
                             }
                         ],
                         "total_price": 450000,
                         "reasoning": "클래식한 오피스룩을 위한 기본 아이템 조합",
-                        "composite_image_url": "https://example.com/composite_001.jpg"
+                        "composite_image_url": "https://example.com/composite_001.jpg",
                     }
                 ],
-                "processing_time": 2.5
+                "processing_time": 2.5,
             }
         }

@@ -2,10 +2,13 @@
 PostgreSQL 데이터베이스 연결 관리
 """
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
-from app.core.config import settings
 import logging
+
+from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
+                                    create_async_engine)
+from sqlalchemy.orm import declarative_base
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +16,15 @@ logger = logging.getLogger(__name__)
 # ipzy-backend와 같은 DB를 사용 (ipzy_db)
 # Docker: postgres 호스트 / Local: localhost
 import os
+
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DATABASE_URL = f"postgresql+asyncpg://postgres:postgres@{DB_HOST}:5432/ipzy_db"
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "ipzy_db")
+DB_USERNAME = os.getenv("DB_USERNAME", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
+DATABASE_URL = (
+    f"postgresql+asyncpg://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
 
 # 비동기 엔진 생성
 engine = create_async_engine(
@@ -45,10 +55,7 @@ async def get_db():
             ...
     """
     async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+        yield session
 
 
 async def init_db():

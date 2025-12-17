@@ -1,5 +1,6 @@
+from typing import List, Optional
+
 from pydantic import BaseModel, Field
-from typing import Optional, List
 
 
 class ProductBase(BaseModel):
@@ -37,6 +38,6 @@ class ProductSearchQuery(BaseModel):
                 "category": "top",
                 "min_price": 50000,
                 "max_price": 150000,
-                "limit": 10
+                "limit": 10,
             }
         }

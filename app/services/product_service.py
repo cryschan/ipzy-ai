@@ -3,13 +3,15 @@
 퀴즈 답변 기반으로 DB에서 상품을 필터링하여 조회
 """
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
-from sqlalchemy.orm import selectinload
-from typing import List, Dict
-from app.models.product import Product, Brand
-from app.services.style_mapping import get_mapped_styles, get_shoes_styles
 import logging
+from typing import Dict, List
+
+from sqlalchemy import and_, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.models.product import Brand, Product
+from app.services.style_mapping import get_mapped_styles, get_shoes_styles
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +23,7 @@ class ProductService:
         self.db = db
 
     async def get_products_by_quiz_answers(
-        self,
-        occasion: str,
-        style: str,
-        budget: int,
-        limit_per_category: int = 10
+        self, occasion: str, style: str, budget: int, limit_per_category: int = 10
     ) -> Dict[str, List[Product]]:
         """
         퀴즈 답변 기반으로 상품을 카테고리별로 조회합니다.
@@ -62,7 +60,7 @@ class ProductService:
                 category=category,
                 styles=category_styles,
                 max_price=max_price,
-                limit=limit_per_category
+                limit=limit_per_category,
             )
             result[category] = products
             logger.info(f"Found {len(products)} products for category {category}")
@@ -90,11 +88,7 @@ class ProductService:
             return 500_000  # 기본값 50만원
 
     async def _get_products_by_category(
-        self,
-        category: str,
-        styles: List[str],
-        max_price: int,
-        limit: int
+        self, category: str, styles: List[str], max_price: int, limit: int
     ) -> List[Product]:
         """
         특정 카테고리의 상품을 스타일과 가격으로 필터링하여 조회합니다.
@@ -111,8 +105,8 @@ class ProductService:
         # 기본 조건
         base_conditions = [
             Product.category == category,
-            Product.is_active == True,
-            Product.deleted_at == None,
+            Product.is_active.is_(True),
+            Product.deleted_at.is_(None),
             Product.removed_background_image_url.isnot(None),  # 누끼 이미지 필수
             Product.price <= max_price,
         ]
@@ -121,10 +115,7 @@ class ProductService:
         # SHOES는 신발 스타일 필터 사용
         if category != "ACCESSORY":
             base_conditions.append(
-                or_(
-                    Product.primary_style.in_(styles),
-                    Brand.primary_style.in_(styles)
-                )
+                or_(Product.primary_style.in_(styles), Brand.primary_style.in_(styles))
             )
 
         # 쿼리 구성 (brand relationship eager load)

@@ -3,19 +3,24 @@ Product SQLAlchemy 모델
 Java 백엔드의 Product 엔티티와 동일한 구조
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, ARRAY, TIMESTAMP, ForeignKey, Text
+from sqlalchemy import (ARRAY, TIMESTAMP, Boolean, Column, ForeignKey, Integer,
+                        String, Text)
 from sqlalchemy.orm import relationship
+
 from app.core.database import Base
 
 
 class Brand(Base):
     """브랜드 모델"""
+
     __tablename__ = "brands"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, unique=True)
     logo_url = Column(String(500))
-    primary_style = Column(String(50))  # hip_hop, minimalist, street, gorpcore, amekaji, cityboy
+    primary_style = Column(
+        String(50)
+    )  # hip_hop, minimalist, street, gorpcore, amekaji, cityboy
     brand_type = Column(String(20))  # CLOTHING, SHOES
     created_at = Column(TIMESTAMP)
     modified_at = Column(TIMESTAMP)
@@ -26,12 +31,15 @@ class Brand(Base):
 
 class Product(Base):
     """상품 모델"""
+
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
     brand_id = Column(Integer, ForeignKey("brands.id"), nullable=False)
     name = Column(String(255), nullable=False)
-    category = Column(String(20), nullable=False)  # TOP, BOTTOM, OUTER, SHOES, ACCESSORY
+    category = Column(
+        String(20), nullable=False
+    )  # TOP, BOTTOM, OUTER, SHOES, ACCESSORY
     sub_category = Column(String(50))
     primary_style = Column(String(50))  # 스타일 정보
     price = Column(Integer, nullable=False)
