@@ -21,11 +21,16 @@ class ImageProcessingService:
     def __init__(self):
         # 애플리케이션 시작 시 설정 오류를 빠르게 드러내기 위한 사전 검증
         if not settings.AWS_S3_BUCKET:
-            raise RuntimeError("AWS_S3_BUCKET is not configured. Set it in your environment or .env.")
+            raise RuntimeError(
+                "AWS_S3_BUCKET is not configured. Set it in your environment or .env."
+            )
 
-        if (settings.AWS_ACCESS_KEY_ID and not settings.AWS_SECRET_ACCESS_KEY) or \
-           (settings.AWS_SECRET_ACCESS_KEY and not settings.AWS_ACCESS_KEY_ID):
-            raise RuntimeError("Provide both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY together, or omit both to use the default credential chain.")
+        if (settings.AWS_ACCESS_KEY_ID and not settings.AWS_SECRET_ACCESS_KEY) or (
+            settings.AWS_SECRET_ACCESS_KEY and not settings.AWS_ACCESS_KEY_ID
+        ):
+            raise RuntimeError(
+                "Provide both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY together, or omit both to use the default credential chain."
+            )
 
         # 명시적 키가 없는 경우, 기본 자격 증명 체인에서 자격 증명이 제공되는지 확인
         if not (settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY):
@@ -36,17 +41,17 @@ class ImageProcessingService:
                 )
 
         # 검증 후 클라이언트를 생성하고, 초기화 오류를 포착
-        s3_client_kwargs = {
-            'region_name': settings.AWS_REGION
-        }
+        s3_client_kwargs = {"region_name": settings.AWS_REGION}
         if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
-            s3_client_kwargs['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
-            s3_client_kwargs['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
+            s3_client_kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
+            s3_client_kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
         try:
-            self.s3_client = boto3.client('s3', **s3_client_kwargs)
+            self.s3_client = boto3.client("s3", **s3_client_kwargs)
         except Exception as exc:
             logger.exception("Failed to initialize S3 client")
-            raise RuntimeError("Failed to initialize S3 client. Verify AWS configuration and network connectivity.") from exc
+            raise RuntimeError(
+                "Failed to initialize S3 client. Verify AWS configuration and network connectivity."
+            ) from exc
 
     def _get_url_hash(self, url: str) -> str:
         """캐싱을 위해 URL에서 MD5 해시를 생성"""
@@ -67,7 +72,9 @@ class ImageProcessingService:
             not_found_codes = {"404", "NoSuchKey", "NotFound", "403", "Forbidden"}
             if status_code in [404, 403] or (error_code in not_found_codes):
                 if status_code == 403:
-                    logger.warning(f"S3 permission denied for key={s3_key}. Treating as cache miss.")  # 권한 거부 발생 시 캐시 미스로 처리
+                    logger.warning(
+                        f"S3 permission denied for key={s3_key}. Treating as cache miss."
+                    )  # 권한 거부 발생 시 캐시 미스로 처리
                 return False
 
             # 그 외 오류는 그대로 예외 전파
@@ -110,22 +117,28 @@ class ImageProcessingService:
                 category_counts[cat] = category_counts.get(cat, 0) + 1
             duplicates = [cat for cat, count in category_counts.items() if count > 1]
             if duplicates:
-                logger.error(f"Duplicate categories provided: {', '.join(duplicates)}. Each category must be unique.")
+                logger.error(
+                    f"Duplicate categories provided: {', '.join(duplicates)}. Each category must be unique."
+                )
                 return None
 
             for item in items:
                 # nobg_image_url에서 다운로드 (이미 배경 제거됨)
                 img = await self._download_image(item.nobg_image_url)
                 if img:
-                    processed_images.append({
-                        'image': img,
-                        'category': item.category,
-                        'product_id': item.product_id
-                    })
+                    processed_images.append(
+                        {
+                            "image": img,
+                            "category": item.category,
+                            "product_id": item.product_id,
+                        }
+                    )
                     # 이후 결합을 위해 원본 아이템 데이터 저장
                     item_map[item.category.upper()] = item
                 else:
-                    logger.warning(f"Failed to download image for product {item.product_id}")
+                    logger.warning(
+                        f"Failed to download image for product {item.product_id}"
+                    )
 
             if not processed_images:
                 logger.error("No images were successfully downloaded")
@@ -137,16 +150,14 @@ class ImageProcessingService:
             s3_key = f"{settings.S3_COMPOSITE_PREFIX}/{filename}"
 
             buffer = BytesIO()
-            composite.save(buffer, format='PNG')
+            composite.save(buffer, format="PNG")
             buffer.seek(0)
 
             self.s3_client.upload_fileobj(
                 buffer,
                 settings.AWS_S3_BUCKET,
                 s3_key,
-                ExtraArgs={
-                    'ContentType': 'image/png'
-                }
+                ExtraArgs={"ContentType": "image/png"},
             )
 
             composite_url = self._get_s3_url(s3_key)
@@ -156,32 +167,34 @@ class ImageProcessingService:
             total_price = 0
 
             for pos in positions:
-                category = pos['category'].upper()
+                category = pos["category"].upper()
                 if category in item_map:
                     original_item = item_map[category]
-                    items_with_positions.append({
-                        'product_id': original_item.product_id,
-                        'category': original_item.category,
-                        'name': original_item.name,
-                        'brand': original_item.brand,
-                        'price': original_item.price,
-                        'link_url': original_item.link_url,
-                        'position': {
-                            'x': pos['x'],
-                            'y': pos['y'],
-                            'width': pos['width'],
-                            'height': pos['height']
+                    items_with_positions.append(
+                        {
+                            "product_id": original_item.product_id,
+                            "category": original_item.category,
+                            "name": original_item.name,
+                            "brand": original_item.brand,
+                            "price": original_item.price,
+                            "link_url": original_item.link_url,
+                            "position": {
+                                "x": pos["x"],
+                                "y": pos["y"],
+                                "width": pos["width"],
+                                "height": pos["height"],
+                            },
                         }
-                    })
+                    )
                     # Add to total price
                     total_price += original_item.price
 
             return {
-                'composite_url': composite_url,
-                'items': items_with_positions,
-                'total_price': total_price,
-                'image_width': 1200,
-                'image_height': 1600
+                "composite_url": composite_url,
+                "items": items_with_positions,
+                "total_price": total_price,
+                "image_width": 1200,
+                "image_height": 1600,
             }
 
         except ClientError:
@@ -225,64 +238,68 @@ class ImageProcessingService:
             logger.exception(f"Unexpected error for {image_url}")
             return None, error_msg
 
-    def _compose_images(self, processed_images: List[dict]) -> tuple[Image.Image, List[dict]]:
+    def _compose_images(
+        self, processed_images: List[dict]
+    ) -> tuple[Image.Image, List[dict]]:
         canvas_width = 1200
         canvas_height = 1600
-        canvas = Image.new('RGBA', (canvas_width, canvas_height), (255, 255, 255, 0))
+        canvas = Image.new("RGBA", (canvas_width, canvas_height), (255, 255, 255, 0))
 
         # 2열 레이아웃 배치
         # 왼쪽(LEFT): TOP(상단), BOTTOM(하단)
         # 오른쪽(RIGHT): OUTER(상단), ACCESSORY(중간), SHOES(하단)
         category_positions = {
-            'top': {'x': 'left', 'y': 100, 'scale': 0.4},           # 왼쪽 상단
-            'outer': {'x': 'right', 'y': 100, 'scale': 0.4},        # 오른쪽 상단
-            'bottom': {'x': 'left', 'y': 800, 'scale': 0.4},        # 왼쪽 하단
-            'accessory': {'x': 'right', 'y': 600, 'scale': 0.3},    # 오른쪽 중간
-            'shoes': {'x': 'right', 'y': 1100, 'scale': 0.35}       # 오른쪽 하단
+            "top": {"x": "left", "y": 100, "scale": 0.4},  # 왼쪽 상단
+            "outer": {"x": "right", "y": 100, "scale": 0.4},  # 오른쪽 상단
+            "bottom": {"x": "left", "y": 800, "scale": 0.4},  # 왼쪽 하단
+            "accessory": {"x": "right", "y": 600, "scale": 0.3},  # 오른쪽 중간
+            "shoes": {"x": "right", "y": 1100, "scale": 0.35},  # 오른쪽 하단
         }
 
         positions = []  # 각 아이템의 위치 정보를 기록
 
         for item in processed_images:
-            img = item['image']
-            category = item['category'].lower()
+            img = item["image"]
+            category = item["category"].lower()
 
             if category not in category_positions:
-                category = 'accessory'
+                category = "accessory"
 
             position_info = category_positions[category]
 
             img_width, img_height = img.size
-            scale = position_info['scale']
+            scale = position_info["scale"]
             new_width = int(img_width * scale)
             new_height = int(img_height * scale)
 
             img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
             # 좌/우 정렬에 따라 x 위치 계산
-            if position_info['x'] == 'left':
+            if position_info["x"] == "left":
                 # 왼쪽 열: 캔버스의 1/4 지점에 정렬
                 x_position = (canvas_width // 4) - (new_width // 2)
             else:  # 'right'
                 # 오른쪽 열: 캔버스의 3/4 지점에 정렬
                 x_position = (canvas_width * 3 // 4) - (new_width // 2)
 
-            y_position = position_info['y']
+            y_position = position_info["y"]
 
-            if img_resized.mode == 'RGBA':
+            if img_resized.mode == "RGBA":
                 canvas.paste(img_resized, (x_position, y_position), img_resized)
             else:
                 canvas.paste(img_resized, (x_position, y_position))
 
             # 위치 정보 저장
-            positions.append({
-                'category': item['category'],
-                'product_id': item.get('product_id'),
-                'x': x_position,
-                'y': y_position,
-                'width': new_width,
-                'height': new_height
-            })
+            positions.append(
+                {
+                    "category": item["category"],
+                    "product_id": item.get("product_id"),
+                    "x": x_position,
+                    "y": y_position,
+                    "width": new_width,
+                    "height": new_height,
+                }
+            )
 
         return canvas, positions
 
@@ -310,16 +327,14 @@ class ImageProcessingService:
 
             # 해시 기반 파일명으로 S3에 업로드
             buffer = BytesIO()
-            output_image.save(buffer, format='PNG')
+            output_image.save(buffer, format="PNG")
             buffer.seek(0)
 
             self.s3_client.upload_fileobj(
                 buffer,
                 settings.AWS_S3_BUCKET,
                 s3_key,
-                ExtraArgs={
-                    'ContentType': 'image/png'
-                }
+                ExtraArgs={"ContentType": "image/png"},
             )
 
             return self._get_s3_url(s3_key), None
@@ -342,25 +357,25 @@ class ImageProcessingService:
             nobg_url, error_msg = await self.remove_background(image_url)
             if nobg_url:
                 return {
-                    'original_url': image_url,
-                    'nobg_image_url': nobg_url,
-                    'success': True,
-                    'error': None
+                    "original_url": image_url,
+                    "nobg_image_url": nobg_url,
+                    "success": True,
+                    "error": None,
                 }
             else:
                 return {
-                    'original_url': image_url,
-                    'nobg_image_url': None,
-                    'success': False,
-                    'error': error_msg or 'Unknown error'
+                    "original_url": image_url,
+                    "nobg_image_url": None,
+                    "success": False,
+                    "error": error_msg or "Unknown error",
                 }
         except Exception as e:
             logger.exception(f"Unexpected error processing {image_url}")
             return {
-                'original_url': image_url,
-                'nobg_image_url': None,
-                'success': False,
-                'error': f'Unexpected error: {str(e)}'
+                "original_url": image_url,
+                "nobg_image_url": None,
+                "success": False,
+                "error": f"Unexpected error: {str(e)}",
             }
 
     async def remove_background_batch(self, image_urls: List[str]) -> List[Dict]:
@@ -380,7 +395,9 @@ class ImageProcessingService:
         tasks = [self._remove_background_single(url) for url in image_urls]
         results = await asyncio.gather(*tasks)
 
-        success_count = sum(1 for r in results if r['success'])
-        logger.info(f"Batch processing completed: {success_count}/{len(results)} succeeded")
+        success_count = sum(1 for r in results if r["success"])
+        logger.info(
+            f"Batch processing completed: {success_count}/{len(results)} succeeded"
+        )
 
         return list(results)

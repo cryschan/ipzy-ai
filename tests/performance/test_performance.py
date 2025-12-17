@@ -2,6 +2,7 @@
 배경 제거 API 성능 비교 테스트
 개별 API vs 배치 API 처리 시간 측정
 """
+
 import httpx
 import asyncio
 import time
@@ -14,7 +15,9 @@ BASE_URL = "http://localhost:8000/api/image"
 TEST_URLS = TEST_IMAGE_URLS
 
 
-async def call_individual_api_with_retry(client: httpx.AsyncClient, url: str, index: int, max_retries: int = 2) -> tuple:
+async def call_individual_api_with_retry(
+    client: httpx.AsyncClient, url: str, index: int, max_retries: int = 2
+) -> tuple:
     """
     개별 API 호출 (재시도 로직 포함)
 
@@ -30,19 +33,20 @@ async def call_individual_api_with_retry(client: httpx.AsyncClient, url: str, in
     for attempt in range(max_retries + 1):
         try:
             response = await client.post(
-                f"{BASE_URL}/remove-background",
-                json={"image_url": url}
+                f"{BASE_URL}/remove-background", json={"image_url": url}
             )
             response.raise_for_status()
             result = response.json()
 
-            if result.get('success'):
+            if result.get("success"):
                 retry_msg = f" (재시도 {attempt}회)" if attempt > 0 else ""
                 return (index, True, result, retry_msg)
             else:
-                error_msg = result.get('message', 'Unknown error')
+                error_msg = result.get("message", "Unknown error")
                 if attempt < max_retries:
-                    print(f"  [{index+1}] ⚠️  실패 (재시도 {attempt+1}/{max_retries}): {error_msg}")
+                    print(
+                        f"  [{index+1}] ⚠️  실패 (재시도 {attempt+1}/{max_retries}): {error_msg}"
+                    )
                     await asyncio.sleep(1)  # 1초 대기 후 재시도
                     continue
                 return (index, False, error_msg, "")
@@ -57,7 +61,9 @@ async def call_individual_api_with_retry(client: httpx.AsyncClient, url: str, in
         except httpx.HTTPStatusError as e:
             error_msg = f"HTTP {e.response.status_code}"
             if attempt < max_retries:
-                print(f"  [{index+1}] ⚠️  {error_msg} (재시도 {attempt+1}/{max_retries})")
+                print(
+                    f"  [{index+1}] ⚠️  {error_msg} (재시도 {attempt+1}/{max_retries})"
+                )
                 await asyncio.sleep(1)
                 continue
             return (index, False, error_msg, "")
@@ -65,7 +71,9 @@ async def call_individual_api_with_retry(client: httpx.AsyncClient, url: str, in
         except Exception as e:
             error_msg = f"예외: {type(e).__name__}: {str(e)}"
             if attempt < max_retries:
-                print(f"  [{index+1}] ⚠️  {error_msg} (재시도 {attempt+1}/{max_retries})")
+                print(
+                    f"  [{index+1}] ⚠️  {error_msg} (재시도 {attempt+1}/{max_retries})"
+                )
                 await asyncio.sleep(1)
                 continue
             return (index, False, error_msg, "")
@@ -75,9 +83,9 @@ async def call_individual_api_with_retry(client: httpx.AsyncClient, url: str, in
 
 async def test_individual_api(urls: List[str]) -> dict:
     """개별 API를 여러 번 호출 (병렬 처리 + 재시도)"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🔴 개별 API 테스트 (10번 호출, 병렬 처리, 재시도 포함)")
-    print("="*60)
+    print("=" * 60)
 
     start_time = time.time()
 
@@ -112,26 +120,25 @@ async def test_individual_api(urls: List[str]) -> dict:
     print(f"  - 평균 처리 시간: {total_time/len(urls):.2f}초/개")
 
     return {
-        'method': 'individual',
-        'total_time': total_time,
-        'success_count': success_count,
-        'failed_count': failed_count,
-        'avg_time': total_time / len(urls)
+        "method": "individual",
+        "total_time": total_time,
+        "success_count": success_count,
+        "failed_count": failed_count,
+        "avg_time": total_time / len(urls),
     }
 
 
 async def test_batch_api(urls: List[str]) -> dict:
     """배치 API로 한 번에 처리"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🟢 배치 API 테스트 (1번 호출)")
-    print("="*60)
+    print("=" * 60)
 
     start_time = time.time()
 
     async with httpx.AsyncClient(timeout=180.0) as client:  # 타임아웃 180초 (3분)
         response = await client.post(
-            f"{BASE_URL}/remove-background/batch",
-            json={"image_urls": urls}
+            f"{BASE_URL}/remove-background/batch", json={"image_urls": urls}
         )
 
     end_time = time.time()
@@ -140,8 +147,8 @@ async def test_batch_api(urls: List[str]) -> dict:
     result = response.json()
 
     # 결과 출력
-    for i, item in enumerate(result.get('results', [])):
-        if item['success']:
+    for i, item in enumerate(result.get("results", [])):
+        if item["success"]:
             print(f"  [{i+1}] ✅ 성공")
         else:
             print(f"  [{i+1}] ❌ 실패: {item.get('error')}")
@@ -152,15 +159,17 @@ async def test_batch_api(urls: List[str]) -> dict:
     print(f"  - 실패: {result.get('failed_count')}개")
     print(f"  - API 보고 처리 시간: {result.get('processing_time')}초")
     print(f"  - 실제 왕복 시간: {total_time:.2f}초")
-    print(f"  - 네트워크 오버헤드: {total_time - result.get('processing_time', 0):.2f}초")
+    print(
+        f"  - 네트워크 오버헤드: {total_time - result.get('processing_time', 0):.2f}초"
+    )
 
     return {
-        'method': 'batch',
-        'total_time': total_time,
-        'processing_time': result.get('processing_time'),
-        'success_count': result.get('success_count'),
-        'failed_count': result.get('failed_count'),
-        'avg_time': result.get('processing_time', 0) / result.get('total_count', 1)
+        "method": "batch",
+        "total_time": total_time,
+        "processing_time": result.get("processing_time"),
+        "success_count": result.get("success_count"),
+        "failed_count": result.get("failed_count"),
+        "avg_time": result.get("processing_time", 0) / result.get("total_count", 1),
     }
 
 
@@ -179,21 +188,25 @@ async def main():
     individual_result = await test_individual_api(TEST_URLS)
 
     # 비교 결과
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📈 성능 비교 결과")
-    print("="*60)
+    print("=" * 60)
 
-    time_saved = individual_result['total_time'] - batch_result['total_time']
-    improvement = (time_saved / individual_result['total_time']) * 100
+    time_saved = individual_result["total_time"] - batch_result["total_time"]
+    improvement = (time_saved / individual_result["total_time"]) * 100
 
     print(f"\n개별 API (10번 호출):")
     print(f"  ├─ 총 소요 시간: {individual_result['total_time']:.2f}초")
-    print(f"  ├─ 성공/실패: {individual_result['success_count']}/{individual_result['failed_count']}")
+    print(
+        f"  ├─ 성공/실패: {individual_result['success_count']}/{individual_result['failed_count']}"
+    )
     print(f"  └─ 평균 처리 시간: {individual_result['avg_time']:.2f}초/개")
 
     print(f"\n배치 API (1번 호출):")
     print(f"  ├─ 총 소요 시간: {batch_result['total_time']:.2f}초")
-    print(f"  ├─ 성공/실패: {batch_result['success_count']}/{batch_result['failed_count']}")
+    print(
+        f"  ├─ 성공/실패: {batch_result['success_count']}/{batch_result['failed_count']}"
+    )
     print(f"  └─ 평균 처리 시간: {batch_result['avg_time']:.2f}초/개")
 
     print(f"\n⚡ 성능 개선:")
@@ -203,7 +216,7 @@ async def main():
     else:
         print(f"  └─ 개별 API가 더 빠름 (차이: {abs(time_saved):.2f}초)")
 
-    print("\n" + "="*60 + "\n")
+    print("\n" + "=" * 60 + "\n")
 
 
 if __name__ == "__main__":
