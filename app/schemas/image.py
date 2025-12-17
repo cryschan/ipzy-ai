@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import List
+from app.constants import SINGLE_TEST_IMAGE_URL, TEST_IMAGE_URLS
 
-IMAGE_URL = "https://image.msscdn.net/thumbnails/images/goods_img/20250828/5373229/5373229_17563554907585_big.jpg"
+IMAGE_URL = SINGLE_TEST_IMAGE_URL
 
 class ImageRemoveBackgroundRequest(BaseModel):
     image_url: str = Field(
@@ -52,18 +53,7 @@ class BatchRemoveBackgroundRequest(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "image_urls": [
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20250828/5373229/5373229_17563554907585_big.jpg",
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20240515/4073073/4073073_16848382344714_big.jpg",
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20240412/3987654/3987654_17128901234567_big.jpg",
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20240310/3876543/3876543_17091234567890_big.jpg",
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20240205/3765432/3765432_17083456789012_big.jpg",
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20240115/3654321/3654321_17075678901234_big.jpg",
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20231220/3543210/3543210_17067890123456_big.jpg",
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20231105/3432109/3432109_17059012345678_big.jpg",
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20231001/3321098/3321098_17051234567890_big.jpg",
-                        "https://image.msscdn.net/thumbnails/images/goods_img/20230820/3210987/3210987_17043456789012_big.jpg"
-                    ]
+                    "image_urls": TEST_IMAGE_URLS
                 }
             ]
         }
