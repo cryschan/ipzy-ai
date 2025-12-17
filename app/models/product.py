@@ -37,8 +37,8 @@ class Product(Base):
     price = Column(Integer, nullable=False)
     original_price = Column(Integer)
     discount_percent = Column(Integer, default=0)
-    thumbnail_image_url = Column(String(500), nullable=False)
-    removed_background_image_url = Column(String(500), nullable=False)
+    image_url = Column(String(500), nullable=False)
+    removed_background_image_url = Column(String(500))
     description = Column(Text)  # review 필드
     colors = Column(ARRAY(String))  # 색상 배열
     seasons = Column(ARRAY(String))  # 계절 배열

@@ -56,10 +56,8 @@
 **필수:**
 - Python 3.11+
 - Docker & Docker Compose
-- Google Gemini API 키
-
-**선택:**
-- OpenAI API 키 (GPT 모델 사용 시)
+- OpenAI API 키 ([발급받기](https://platform.openai.com/api-keys))
+- AWS 계정 (S3 이미지 업로드용)
 
 ### 2. 환경 설정
 
@@ -69,11 +67,14 @@ cd /Users/a/IdeaProjects/FinalProject/ipzy-ai
 
 # 2. 환경변수 설정
 cp .env.example .env
-# .env 파일 수정:
-# - GOOGLE_API_KEY
-# - BACKEND_API_KEY
 
-# 3. Docker 네트워크 생성
+# 3. .env 파일 수정 (필수):
+#    - OPENAI_API_KEY          (코디 추천 AI)
+#    - AWS_ACCESS_KEY_ID       (이미지 업로드)
+#    - AWS_SECRET_ACCESS_KEY   (이미지 업로드)
+#    - AWS_S3_BUCKET           (S3 버킷명)
+
+# 4. Docker 네트워크 생성
 docker network create ipzy-network
 ```
 

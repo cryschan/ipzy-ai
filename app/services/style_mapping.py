@@ -94,3 +94,50 @@ def format_for_llm(occasion: str, style: str, body_type: str) -> str:
     body_type_kr = BODY_TYPE_KR.get(body_type.lower(), body_type)
 
     return f"{occasion_kr}에 {style_kr} 보이고 싶어요. {body_type_kr}."
+
+
+# 신발 스타일 매핑
+# DB의 신발 스타일: sneakers, boots, dress_shoes, loafers, sandals
+SHOES_STYLE_MAPPING: Dict[Tuple[str, str], List[str]] = {
+    # 회사 (work)
+    ("work", "clean"): ["dress_shoes", "loafers"],      # 회사 + 깔끔 → 구두, 로퍼
+    ("work", "comfortable"): ["sneakers", "loafers"],   # 회사 + 편한 → 스니커즈, 로퍼
+    ("work", "stylish"): ["loafers", "dress_shoes"],    # 회사 + 세련 → 로퍼, 구두
+    ("work", "hip"): ["sneakers"],                      # 회사 + 힙 → 스니커즈
+
+    # 데이트 (date)
+    ("date", "clean"): ["loafers", "dress_shoes"],      # 데이트 + 깔끔 → 로퍼, 구두
+    ("date", "comfortable"): ["sneakers"],              # 데이트 + 편한 → 스니커즈
+    ("date", "stylish"): ["loafers", "sneakers"],       # 데이트 + 세련 → 로퍼, 스니커즈
+    ("date", "hip"): ["sneakers"],                      # 데이트 + 힙 → 스니커즈
+
+    # 소개팅/모임 (meeting)
+    ("meeting", "clean"): ["loafers", "dress_shoes"],   # 모임 + 깔끔 → 로퍼, 구두
+    ("meeting", "comfortable"): ["sneakers"],           # 모임 + 편한 → 스니커즈
+    ("meeting", "stylish"): ["loafers", "sneakers"],    # 모임 + 세련 → 로퍼, 스니커즈
+    ("meeting", "hip"): ["sneakers"],                   # 모임 + 힙 → 스니커즈
+
+    # 외출 (outdoor)
+    ("outdoor", "clean"): ["sneakers"],                 # 외출 + 깔끔 → 스니커즈
+    ("outdoor", "comfortable"): ["sneakers", "sandals"], # 외출 + 편한 → 스니커즈, 샌들
+    ("outdoor", "stylish"): ["sneakers"],               # 외출 + 세련 → 스니커즈
+    ("outdoor", "hip"): ["sneakers"],                   # 외출 + 힙 → 스니커즈
+}
+
+# 신발 기본 스타일 (매핑이 없을 경우)
+DEFAULT_SHOES_STYLES = ["sneakers"]
+
+
+def get_shoes_styles(occasion: str, style: str) -> List[str]:
+    """
+    occasion과 style 조합에 맞는 신발 스타일 리스트를 반환합니다.
+
+    Args:
+        occasion: 상황 (work, date, meeting, outdoor)
+        style: 스타일 (clean, comfortable, stylish, hip)
+
+    Returns:
+        매핑된 신발 스타일 리스트 (예: ["sneakers", "loafers"])
+    """
+    key = (occasion.lower(), style.lower())
+    return SHOES_STYLE_MAPPING.get(key, DEFAULT_SHOES_STYLES.copy())

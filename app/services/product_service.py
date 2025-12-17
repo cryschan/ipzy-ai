@@ -8,7 +8,7 @@ from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import selectinload
 from typing import List, Dict
 from app.models.product import Product, Brand
-from app.services.style_mapping import get_mapped_styles
+from app.services.style_mapping import get_mapped_styles, get_shoes_styles
 import logging
 
 logger = logging.getLogger(__name__)
@@ -43,17 +43,24 @@ class ProductService:
         mapped_styles = get_mapped_styles(occasion, style)
         logger.info(f"Mapped styles for {occasion} + {style}: {mapped_styles}")
 
-        # 2. 예산 처리
+        # 2. 신발 스타일 매핑 (신발은 별도 로직)
+        shoes_styles = get_shoes_styles(occasion, style)
+        logger.info(f"Mapped shoes styles for {occasion} + {style}: {shoes_styles}")
+
+        # 3. 예산 처리
         max_price = self._parse_budget(budget)
 
-        # 3. 카테고리별로 상품 조회
+        # 4. 카테고리별로 상품 조회
         categories = ["TOP", "BOTTOM", "OUTER", "SHOES"]
         result = {}
 
         for category in categories:
+            # SHOES는 신발 스타일 사용, 나머지는 의류 스타일 사용
+            category_styles = shoes_styles if category == "SHOES" else mapped_styles
+
             products = await self._get_products_by_category(
                 category=category,
-                styles=mapped_styles,
+                styles=category_styles,
                 max_price=max_price,
                 limit=limit_per_category
             )
@@ -101,25 +108,31 @@ class ProductService:
         Returns:
             Product 리스트
         """
+        # 기본 조건
+        base_conditions = [
+            Product.category == category,
+            Product.is_active == True,
+            Product.deleted_at == None,
+            Product.removed_background_image_url.isnot(None),  # 누끼 이미지 필수
+            Product.price <= max_price,
+        ]
+
+        # ACCESSORY만 스타일 필터 제외 (모든 스타일에 매칭)
+        # SHOES는 신발 스타일 필터 사용
+        if category != "ACCESSORY":
+            base_conditions.append(
+                or_(
+                    Product.primary_style.in_(styles),
+                    Brand.primary_style.in_(styles)
+                )
+            )
+
         # 쿼리 구성 (brand relationship eager load)
         stmt = (
             select(Product)
             .join(Brand, Product.brand_id == Brand.id)
             .options(selectinload(Product.brand))  # Brand eager load
-            .where(
-                and_(
-                    Product.category == category,
-                    Product.is_active == True,
-                    Product.deleted_at == None,
-                    Product.removed_background_image_url.isnot(None),  # 누끼 이미지 필수
-                    Product.price <= max_price,
-                    # 스타일 조건: Product.primary_style 또는 Brand.primary_style이 매핑된 스타일에 포함
-                    or_(
-                        Product.primary_style.in_(styles),
-                        Brand.primary_style.in_(styles)
-                    )
-                )
-            )
+            .where(and_(*base_conditions))
             .order_by(Product.id.asc())  # 일단 ID 순, 나중에 인기순으로 변경 가능
             .limit(limit)
         )

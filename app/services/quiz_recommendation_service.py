@@ -177,7 +177,7 @@ class QuizRecommendationService:
                         name=product.name,
                         brand=product.brand.name if product.brand else "Unknown",
                         price=product.price,
-                        image_url=product.thumbnail_image_url,
+                        image_url=product.image_url,
                         link_url=product.purchase_url if product.purchase_url else "",
                         nobg_image_url=product.removed_background_image_url
                     )
