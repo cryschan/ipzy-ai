@@ -11,10 +11,13 @@ from app.schemas.quiz_recommendation import (
     QuizRecommendationResponse,
     OutfitRecommendationDto,
     OutfitResultDto,
-    RecommendedItemDto
+    RecommendedItemDto,
+    ItemPositionDto
 )
+from app.schemas.image import CompositeImageItem
 from app.services.product_service import ProductService
 from app.services.llm_coordinator import LLMCoordinatorService
+from app.services.image_processing import ImageProcessingService
 from app.services.style_mapping import OCCASION_KR, STYLE_KR
 from app.models.product import Product
 import logging
@@ -29,6 +32,7 @@ class QuizRecommendationService:
         self.db = db
         self.product_service = ProductService(db)
         self.llm_service = LLMCoordinatorService()
+        self.image_service = ImageProcessingService()
 
     async def generate_recommendations(
         self,
@@ -80,10 +84,10 @@ class QuizRecommendationService:
 
         logger.info(f"LLM selected {len(selected_outfits)} outfits")
 
-        # 4. DTO로 변환
+        # 4. DTO로 변환 (이미지 합성 포함)
         outfit_dtos = []
         for i, outfit in enumerate(selected_outfits, 1):
-            outfit_dto = self._convert_to_outfit_dto(
+            outfit_dto = await self._convert_to_outfit_dto(
                 outfit=outfit,
                 display_order=i,
                 occasion=quiz_data["occasion"],
@@ -136,7 +140,7 @@ class QuizRecommendationService:
 
         return result
 
-    def _convert_to_outfit_dto(
+    async def _convert_to_outfit_dto(
         self,
         outfit: dict,
         display_order: int,
@@ -144,7 +148,7 @@ class QuizRecommendationService:
         style: str
     ) -> OutfitRecommendationDto:
         """
-        선택된 코디를 OutfitRecommendationDto로 변환합니다 (PR #30 신규 구조).
+        선택된 코디를 OutfitRecommendationDto로 변환합니다 (PR #30 신규 구조 + 이미지 합성).
 
         Args:
             outfit: {"reason": "...", "items": {"TOP": Product, ...}}
@@ -155,16 +159,72 @@ class QuizRecommendationService:
         Returns:
             OutfitRecommendationDto (중첩 구조)
         """
-        items_dto = []
-        total_price = 0
-
         # 카테고리 순서 정의
         category_order = ["TOP", "BOTTOM", "OUTER", "SHOES", "ACCESSORY"]
+
+        # 1. 이미지 합성용 아이템 준비
+        composite_items = []
+        products_map = {}  # category -> product 매핑
 
         for category in category_order:
             product = outfit["items"].get(category)
             if product:
-                item_dto = self._product_to_item_dto(product)
+                products_map[category] = product
+                composite_items.append(
+                    CompositeImageItem(
+                        product_id=product.id,
+                        category=product.category,
+                        name=product.name,
+                        brand=product.brand.name if product.brand else "Unknown",
+                        price=product.price,
+                        image_url=product.thumbnail_image_url,
+                        link_url=product.purchase_url if product.purchase_url else "",
+                        nobg_image_url=product.removed_background_image_url
+                    )
+                )
+
+        # 2. 이미지 합성 호출
+        composite_result = None
+        if composite_items:
+            try:
+                composite_result = await self.image_service.create_composite_image(composite_items)
+                if composite_result:
+                    logger.info(f"Image composition succeeded: {composite_result['composite_url']}")
+                else:
+                    logger.warning("Image composition returned None")
+            except Exception as e:
+                logger.exception(f"Error during image composition: {e}")
+                composite_result = None
+
+        # 3. position 정보 매핑
+        position_map = {}  # product_id -> ItemPositionDto
+        if composite_result and composite_result.get('items'):
+            for item in composite_result['items']:
+                position_map[item['product_id']] = ItemPositionDto(
+                    x=item['position']['x'],
+                    y=item['position']['y'],
+                    width=item['position']['width'],
+                    height=item['position']['height']
+                )
+
+        # 4. DTO 생성 (position 포함)
+        items_dto = []
+        total_price = 0
+
+        for category in category_order:
+            product = products_map.get(category)
+            if product:
+                position = position_map.get(product.id)
+                item_dto = RecommendedItemDto(
+                    product_id=product.id,
+                    category=product.category,
+                    name=product.name,
+                    brand=product.brand.name if product.brand else "Unknown",
+                    price=product.price,
+                    image_url=product.removed_background_image_url,
+                    link_url=product.purchase_url if product.purchase_url else "",
+                    position=position
+                )
                 items_dto.append(item_dto)
                 total_price += product.price
 
@@ -172,18 +232,18 @@ class QuizRecommendationService:
         occasion_kr = OCCASION_KR.get(occasion, occasion)
         style_kr = self._get_style_kr(style)
 
-        # OutfitResultDto 생성 (중첩 구조)
+        # 5. OutfitResultDto 생성 (중첩 구조 + 이미지 합성 결과)
         result = OutfitResultDto(
             success=True,
             message="추천 완료",
-            composite_image_url=None,  # 이미지 합성은 나중에 추가
-            image_width=None,
-            image_height=None,
+            composite_image_url=composite_result['composite_url'] if composite_result else None,
+            image_width=composite_result['image_width'] if composite_result else None,
+            image_height=composite_result['image_height'] if composite_result else None,
             total_price=total_price,
             items=items_dto
         )
 
-        # OutfitRecommendationDto 생성 (최상위)
+        # 6. OutfitRecommendationDto 생성 (최상위)
         return OutfitRecommendationDto(
             displayOrder=display_order,
             occasion=occasion_kr,
