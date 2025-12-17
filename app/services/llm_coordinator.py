@@ -19,8 +19,8 @@ class LLMCoordinatorService:
 
     def __init__(self):
         # OpenAI GPT-3.5-turbo 사용 (가성비 픽)
-        from openai import OpenAI
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        from openai import AsyncOpenAI
+        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = "gpt-3.5-turbo"  # 가성비 좋은 모델
         logger.info(f"LLM Coordinator initialized with model: {self.model}")
 
@@ -54,7 +54,7 @@ class LLMCoordinatorService:
 
         # 2. LLM 호출 (OpenAI GPT-3.5-turbo)
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
@@ -75,8 +75,6 @@ class LLMCoordinatorService:
                 status_code=503,
                 detail="AI 추천 서비스 일시 장애. 잠시 후 다시 시도해주세요."
             )
-            # 폴백 옵션 (주석): 각 카테고리의 첫 번째 상품으로 조합
-            # return self._fallback_selection(candidates, num_outfits)
 
     def _create_selection_prompt(
         self,

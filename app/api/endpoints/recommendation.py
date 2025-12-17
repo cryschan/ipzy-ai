@@ -97,6 +97,16 @@ router = APIRouter()
                 }
             },
         },
+        503: {
+            "description": "AI 서비스 일시 장애",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "AI 추천 서비스 일시 장애. 잠시 후 다시 시도해주세요."
+                    }
+                }
+            },
+        },
         500: {
             "description": "서버 에러",
             "content": {
@@ -144,6 +154,8 @@ async def recommend(
 
         return response
 
+    except HTTPException:
+        raise  # HTTPException은 그대로 전파 (503, 404 등)
     except Exception as e:
         logger.exception(f"Failed to generate recommendations: {e}")
         raise HTTPException(
