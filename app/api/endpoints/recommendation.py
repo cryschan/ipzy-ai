@@ -157,10 +157,11 @@ async def recommend(
     except HTTPException:
         raise  # HTTPException은 그대로 전파 (503, 404 등)
     except Exception as e:
-        logger.exception(f"Failed to generate recommendations: {e}")
+        logger.exception("Failed to generate recommendations")
         raise HTTPException(
-            status_code=500, detail=f"추천 생성 중 오류가 발생했습니다: {str(e)}"
-        )
+            status_code=500,
+            detail="추천 생성 중 오류가 발생했습니다: Internal Server Error",
+        ) from e
 
 
 @router.get(

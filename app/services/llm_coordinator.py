@@ -69,12 +69,12 @@ class LLMCoordinatorService:
             return selected_outfits
 
         except Exception as e:
-            logger.exception(f"LLM selection failed: {e}")
+            logger.exception("LLM selection failed")
             # LLM 실패 시 503 에러
             raise HTTPException(
                 status_code=503,
                 detail="AI 추천 서비스 일시 장애. 잠시 후 다시 시도해주세요."
-            )
+            ) from e
 
     def _create_selection_prompt(
         self,
@@ -197,7 +197,7 @@ class LLMCoordinatorService:
             return selected_outfits
 
         except Exception as e:
-            logger.exception(f"Failed to parse LLM response: {e}")
+            logger.exception("Failed to parse LLM response")
             logger.debug(f"Response text: {response_text}")
             raise
 

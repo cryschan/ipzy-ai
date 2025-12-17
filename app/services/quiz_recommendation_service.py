@@ -192,7 +192,7 @@ class QuizRecommendationService:
                 else:
                     logger.warning("Image composition returned None")
             except Exception as e:
-                logger.exception(f"Error during image composition: {e}")
+                logger.exception("Error during image composition")
                 composite_result = None
 
         # 3. position 정보 매핑
