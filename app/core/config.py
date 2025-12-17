@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = ["*"]
 
     OPENAI_API_KEY: str = ""
-    GOOGLE_API_KEY: str = ""
 
     BACKEND_API_URL: str = "http://ipzy-app:8080"
     BACKEND_API_KEY: str = ""
@@ -22,9 +21,6 @@ class Settings(BaseSettings):
 
     MAX_PRODUCTS_PER_CATEGORY: int = 5
     MAX_RECOMMENDATIONS: int = 3
-
-    LLM_PROVIDER: str = "gemini"
-    LLM_MODEL: str = "gemini-1.5-flash"
 
     LOG_LEVEL: str = "INFO"
 
