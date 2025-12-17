@@ -35,7 +35,6 @@ venv.bak/
 .env.local
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo

@@ -11,12 +11,12 @@
 ## 🎯 주요 기능
 
 ### 1. 상품 이미지 자동 분석
-- **Gemini 1.5 Flash**를 활용한 패션 아이템 분석
+- **OpenAI GPT-4o**를 활용한 패션 아이템 분석
 - 색상, 패턴, 핏, 스타일 자동 추출
-- ChromaDB 캐싱으로 비용 97% 절감
+- 데이터베이스 기반 상품 관리
 
 ### 2. AI 코디 추천
-- 유저 프로파일 기반 개인화 추천
+- **OpenAI GPT-3.5-turbo**로 퀴즈 기반 개인화 추천
 - 상의 + 하의 + 신발 + 아우터 조합
 - 예산, 체형, 스타일 고려
 
@@ -35,9 +35,9 @@
 | 카테고리 | 기술 | 용도 |
 |---------|------|------|
 | **Framework** | FastAPI | 웹 서버 |
-| **이미지 분석** | Gemini 1.5 Flash | 상품 분석 |
-| **코디 추천** | Gemini 1.5 Flash/Pro | LLM 추천 |
-| **Vector DB** | ChromaDB | 캐싱 & 검색 |
+| **이미지 분석** | OpenAI GPT-4o | 상품 분석 |
+| **코디 추천** | OpenAI GPT-3.5-turbo | LLM 추천 |
+| **Database** | PostgreSQL + pgvector | 상품 저장 & 벡터 검색 |
 | **이미지 처리** | Pillow + rembg | 합성 이미지 |
 | **Container** | Docker | 배포 |
 
@@ -56,10 +56,8 @@
 **필수:**
 - Python 3.11+
 - Docker & Docker Compose
-- Google Gemini API 키
-
-**선택:**
-- OpenAI API 키 (GPT 모델 사용 시)
+- OpenAI API 키 ([발급받기](https://platform.openai.com/api-keys))
+- AWS 계정 (S3 이미지 업로드용)
 
 ### 2. 환경 설정
 
@@ -69,11 +67,14 @@ cd /Users/a/IdeaProjects/FinalProject/ipzy-ai
 
 # 2. 환경변수 설정
 cp .env.example .env
-# .env 파일 수정:
-# - GOOGLE_API_KEY
-# - BACKEND_API_KEY
 
-# 3. Docker 네트워크 생성
+# 3. .env 파일 수정 (필수):
+#    - OPENAI_API_KEY          (코디 추천 AI)
+#    - AWS_ACCESS_KEY_ID       (이미지 업로드)
+#    - AWS_SECRET_ACCESS_KEY   (이미지 업로드)
+#    - AWS_S3_BUCKET           (S3 버킷명)
+
+# 4. Docker 네트워크 생성
 docker network create ipzy-network
 ```
 
@@ -148,15 +149,15 @@ ipzy-ai/
 
 ## 💰 비용 최적화
 
-### Gemini 1.5 Flash 선택 이유
+### OpenAI GPT-3.5-turbo 사용
 
-| 모델 | 이미지 분석 | 추천 1건 | 월 1,000명 |
-|------|-----------|---------|-----------|
-| **Gemini Flash** | $0.0001 | $0.0015 | **$15** |
-| GPT-4o-mini | $0.0003 | $0.003 | $30 |
-| GPT-4o | $0.003 | $0.05 | $500 |
+| 모델 | 추천 1건 비용 | 월 1,000명 |
+|------|--------------|-----------|
+| **GPT-3.5-turbo** | ~$0.002 | **~$20** |
+| GPT-4o-mini | ~$0.003 | ~$30 |
+| GPT-4o | ~$0.05 | ~$500 |
 
-**97% 비용 절감 달성!**
+**비용 효율적인 추천 시스템 구축**
 
 ---
 

@@ -1,5 +1,6 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -9,7 +10,6 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = ["*"]
 
     OPENAI_API_KEY: str = ""
-    GOOGLE_API_KEY: str = ""
 
     BACKEND_API_URL: str = "http://ipzy-app:8080"
     BACKEND_API_KEY: str = ""
@@ -22,9 +22,6 @@ class Settings(BaseSettings):
 
     MAX_PRODUCTS_PER_CATEGORY: int = 5
     MAX_RECOMMENDATIONS: int = 3
-
-    LLM_PROVIDER: str = "gemini"
-    LLM_MODEL: str = "gemini-1.5-flash"
 
     LOG_LEVEL: str = "INFO"
 
@@ -39,6 +36,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
+        extra="ignore",
     )
 
 

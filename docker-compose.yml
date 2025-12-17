@@ -30,9 +30,11 @@ services:
       - PROJECT_NAME=${PROJECT_NAME:-Fashion Coordination AI}
       - API_PREFIX=${API_PREFIX:-/api}
 
+      # Database
+      - DB_HOST=ipzy-postgres
+
       # API Keys
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
 
       # Backend Integration
       - BACKEND_API_URL=${BACKEND_API_URL:-http://ipzy-app:8080}
@@ -45,16 +47,25 @@ services:
       # Image Processing
       - IMAGE_OUTPUT_DIR=${IMAGE_OUTPUT_DIR:-./outputs/composites}
 
+      # AWS S3
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - AWS_REGION=${AWS_REGION:-ap-northeast-2}
+      - S3_IMAGE_PREFIX=${S3_IMAGE_PREFIX:-background-removed}
+      - S3_COMPOSITE_PREFIX=${S3_COMPOSITE_PREFIX:-composite}
+
       # AI Settings
       - MAX_RECOMMENDATIONS=${MAX_RECOMMENDATIONS:-3}
       - MAX_PRODUCTS_PER_CATEGORY=${MAX_PRODUCTS_PER_CATEGORY:-5}
-      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
-      - LLM_MODEL=${LLM_MODEL:-gemini-1.5-flash}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_MODEL=${LLM_MODEL:-gpt-3.5-turbo}
 
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
     volumes:
+      - ./app:/app/app              # 소스 코드 실시간 반영 (개발용)
       - ai_data:/app/data
       - ai_outputs:/app/outputs
 
