@@ -144,6 +144,9 @@ async def test_batch_api(urls: List[str]) -> dict:
     end_time = time.time()
     total_time = end_time - start_time
 
+    assert (
+        response.status_code == 200
+    ), f"Batch API request failed: {response.status_code} - {response.text}"
     result = response.json()
 
     # 결과 출력
