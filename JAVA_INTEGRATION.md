@@ -3,10 +3,12 @@
 ## Python API 엔드포인트 변경
 
 **변경 사항:**
+
 - ❌ 기존: `POST /api/v1/recommend`
 - ✅ 신규: `POST /api/recommend`
 
 **Java 쪽 수정 필요:**
+
 - `PythonAiClient.java`의 `.uri("/api/v1/recommend")` → `.uri("/api/recommend")`로 변경
 
 ---
@@ -48,6 +50,7 @@ POST /api/recommend (Python)  ← **여기서 Python 호출**
 **Endpoint:** `POST /api/recommend`
 
 **Request Body:**
+
 ```json
 {
   "sessionId": 123,
@@ -85,6 +88,7 @@ POST /api/recommend (Python)  ← **여기서 Python 호출**
 **⚠️ PR #30 신규 구조 반영 (중첩 구조)**
 
 **Response Body:**
+
 ```json
 {
   "recommendedOutfits": [
@@ -160,6 +164,7 @@ POST /api/recommend (Python)  ← **여기서 Python 호출**
 ## Python 내부 로직
 
 ### 1. 퀴즈 답변 파싱
+
 ```python
 {
   "occasion": "date",      # 1번 질문
@@ -170,33 +175,42 @@ POST /api/recommend (Python)  ← **여기서 Python 호출**
 ```
 
 ### 2. 스타일 매핑
+
 `occasion` + `style` 조합을 DB의 `primary_style`로 매핑:
+
 ```python
 ("date", "stylish") → ["cityboy", "minimalist"]
 ```
 
 **전체 매핑 (16가지 조합 → 6가지 스타일):**
+
 - `hip_hop`, `minimalist`, `street`, `gorpcore`, `amekaji`, `cityboy`
 
 **참고:**
+
 - 스타일 정의는 `ipzy-backend/docs/product/brand-by-style.md` 문서 기준
 - 현재 `primary_style`은 String 타입 (enum은 프로토타입 테스트 후 결정)
 
 ### 3. DB 상품 조회
+
 PostgreSQL `products` 테이블에서:
+
 - 카테고리: TOP, BOTTOM, OUTER, SHOES
 - 필터: `primary_style` IN (매핑된 스타일), `price` <= 예산
 - 정렬: ID 순 (나중에 인기순으로 변경 가능)
 - 개수: 카테고리당 최대 10개
 
 ### 4. LLM 코디 선택
+
 OpenAI GPT-3.5-turbo에게 상품 후보를 전달:
+
 - 각 카테고리에서 1개씩 선택
 - 색상 조화, 스타일 통일성 고려
 - 체형 고민 반영
 - 총 3개 코디 세트 반환
 
 ### 5. DTO 변환
+
 Python 내부 데이터 → Java DTO 형식 (camelCase)
 
 ---
@@ -206,6 +220,7 @@ Python 내부 데이터 → Java DTO 형식 (camelCase)
 ### PythonAiClient.java
 
 **변경 전:**
+
 ```java
 RecommendationResponse response = pythonAiRestClient.post()
     .uri("/api/v1/recommend")  // ❌ 기존
@@ -215,6 +230,7 @@ RecommendationResponse response = pythonAiRestClient.post()
 ```
 
 **변경 후:**
+
 ```java
 RecommendationResponse response = pythonAiRestClient.post()
     .uri("/api/recommend")  // ✅ 신규
@@ -228,6 +244,7 @@ RecommendationResponse response = pythonAiRestClient.post()
 ## 테스트 방법
 
 ### 1. Python 서버 실행
+
 ```bash
 cd ipzy-ai
 docker compose up -d
@@ -236,6 +253,7 @@ uvicorn app.main:app --reload
 ```
 
 ### 2. 엔드포인트 테스트
+
 ```bash
 curl -X POST http://localhost:8000/api/recommend \
   -H "Content-Type: application/json" \
@@ -251,6 +269,7 @@ curl -X POST http://localhost:8000/api/recommend \
 ```
 
 ### 3. Java 통합 테스트
+
 Java 백엔드에서 `POST /api/recommendations/sessions/{sessionId}/generate` 호출
 
 ---
@@ -258,14 +277,16 @@ Java 백엔드에서 `POST /api/recommendations/sessions/{sessionId}/generate` �
 ## 환경 변수 (.env)
 
 **필수:**
+
 ```bash
 OPENAI_API_KEY=sk-proj-...  # OpenAI GPT-3.5-turbo API 키
 ```
 
 **선택 (AWS 설정 없어도 동작):**
+
 ```bash
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
+# IAM 계정 사용 권장 (Root 계정 X)
+# 권장: aws configure 사용 (환경변수 불필요)
 AWS_S3_BUCKET=...
 ```
 

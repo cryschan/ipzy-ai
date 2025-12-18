@@ -68,6 +68,7 @@ services:
       - ./app:/app/app              # 소스 코드 실시간 반영 (개발용)
       - ai_data:/app/data
       - ai_outputs:/app/outputs
+      - ~/.aws:/root/.aws:ro        # AWS credentials (aws configure 사용 시)
 
     networks:
       - ipzy-network
