@@ -2,48 +2,97 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from app.schemas.image import (
     ImageRemoveBackgroundRequest,
     ImageRemoveBackgroundResponse,
+    BatchRemoveBackgroundRequest,
+    BatchRemoveBackgroundResponse,
     CreateCompositeImageRequest,
     CreateCompositeJobResponse,
-    CompositeJobStatus
+    CompositeJobStatus,
 )
 from app.services.image_processing import ImageProcessingService
 from app.services.job_manager import job_manager
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 image_service = ImageProcessingService()
 
+
 @router.post("/remove-background", response_model=ImageRemoveBackgroundResponse)
 async def remove_background(request: ImageRemoveBackgroundRequest):
     try:
-        nobg_image_url = await image_service.remove_background(request.image_url)
+        nobg_image_url, error_msg = await image_service.remove_background(
+            request.image_url
+        )
 
         if not nobg_image_url:
             raise HTTPException(
                 status_code=500,
-                detail="Failed to remove background from image"
+                detail=error_msg or "Failed to remove background from image",
             )
 
         return ImageRemoveBackgroundResponse(
             success=True,
             nobg_image_url=nobg_image_url,
-            message="Background removed successfully"
+            message="Background removed successfully",
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Error processing image: {str(e)}"
+            status_code=500, detail=f"Error processing image: {str(e)}"
+        ) from e
+
+
+@router.post("/remove-background/batch", response_model=BatchRemoveBackgroundResponse)
+async def remove_background_batch(request: BatchRemoveBackgroundRequest):
+    """
+    여러 이미지의 배경을 한 번에 제거합니다 (최대 10개).
+    모든 이미지를 병렬로 처리하여 처리 시간을 최소화합니다.
+    """
+    try:
+        start_time = time.time()
+
+        # 배치 처리 실행
+        results = await image_service.remove_background_batch(request.image_urls)
+
+        # 처리 시간 계산
+        processing_time = time.time() - start_time
+
+        # 통계 계산
+        total_count = len(results)
+        success_count = sum(1 for r in results if r["success"])
+        failed_count = total_count - success_count
+
+        # 전체 성공 여부 (하나라도 성공하면 True)
+        overall_success = success_count > 0
+
+        message = f"Batch processing completed: {success_count} succeeded, {failed_count} failed"
+
+        return BatchRemoveBackgroundResponse(
+            success=overall_success,
+            results=results,
+            total_count=total_count,
+            success_count=success_count,
+            failed_count=failed_count,
+            processing_time=round(processing_time, 2),
+            message=message,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Batch background removal error")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing batch: {str(e)}"
         ) from e
 
 
 async def _process_composite_job(job_id: str, items):
     """합성 이미지 생성 작업을 백그라운드에서 처리합니다."""
     try:
-        job_manager.update_job_status(job_id, 'processing')
+        job_manager.update_job_status(job_id, "processing")
 
         result = await image_service.create_composite_image(items)
 
@@ -52,13 +101,13 @@ async def _process_composite_job(job_id: str, items):
             return
 
         response_data = {
-            'success': True,
-            'composite_image_url': result['composite_url'],
-            'image_width': result['image_width'],
-            'image_height': result['image_height'],
-            'items': result['items'],
-            'total_price': result['total_price'],
-            'message': "Composite image created successfully"
+            "success": True,
+            "composite_image_url": result["composite_url"],
+            "image_width": result["image_width"],
+            "image_height": result["image_height"],
+            "items": result["items"],
+            "total_price": result["total_price"],
+            "message": "Composite image created successfully",
         }
 
         job_manager.complete_job(job_id, response_data)
@@ -70,8 +119,7 @@ async def _process_composite_job(job_id: str, items):
 
 @router.post("/composite/create", response_model=CreateCompositeJobResponse)
 async def create_composite(
-    request: CreateCompositeImageRequest,
-    background_tasks: BackgroundTasks
+    request: CreateCompositeImageRequest, background_tasks: BackgroundTasks
 ):
     """
     합성 이미지를 비동기로 생성합니다.
@@ -79,10 +127,7 @@ async def create_composite(
     """
     try:
         if not request.items or len(request.items) == 0:
-            raise HTTPException(
-                status_code=400,
-                detail="Items list cannot be empty"
-            )
+            raise HTTPException(status_code=400, detail="Items list cannot be empty")
 
         # Validate: Check for duplicate categories
         categories = [item.category.upper() for item in request.items]
@@ -94,7 +139,7 @@ async def create_composite(
         if duplicates:
             raise HTTPException(
                 status_code=400,
-                detail=f"Duplicate categories found: {', '.join(duplicates)}. Each category can only appear once."
+                detail=f"Duplicate categories found: {', '.join(duplicates)}. Each category can only appear once.",
             )
 
         # Validate: Check for valid categories
@@ -103,7 +148,7 @@ async def create_composite(
         if invalid_categories:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid categories found: {', '.join(invalid_categories)}. Valid categories are: {', '.join(valid_categories)}"
+                detail=f"Invalid categories found: {', '.join(invalid_categories)}. Valid categories are: {', '.join(valid_categories)}",
             )
 
         # Create job
@@ -113,17 +158,14 @@ async def create_composite(
         background_tasks.add_task(_process_composite_job, job_id, request.items)
 
         return CreateCompositeJobResponse(
-            success=True,
-            job_id=job_id,
-            message="Composite image creation job started"
+            success=True, job_id=job_id, message="Composite image creation job started"
         )
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Error creating composite job: {str(e)}"
+            status_code=500, detail=f"Error creating composite job: {str(e)}"
         ) from e
 
 
@@ -135,9 +177,6 @@ async def get_composite_status(job_id: str):
     job = job_manager.get_job(job_id)
 
     if not job:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Job {job_id} not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
 
     return CompositeJobStatus(**job)

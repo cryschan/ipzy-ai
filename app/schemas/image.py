@@ -1,26 +1,19 @@
 from pydantic import BaseModel, Field
 from typing import List
+from app.constants import SINGLE_TEST_IMAGE_URL, TEST_IMAGE_URLS
 
-IMAGE_URL = "https://image.msscdn.net/thumbnails/images/goods_img/20250828/5373229/5373229_17563554907585_big.jpg?w=1200"
+IMAGE_URL = SINGLE_TEST_IMAGE_URL
+
 
 class ImageRemoveBackgroundRequest(BaseModel):
     image_url: str = Field(
         ...,
         description="URL of the image to remove background from",
-        examples=[
-            IMAGE_URL
-        ]
+        examples=[IMAGE_URL],
     )
 
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "image_url": IMAGE_URL
-                }
-            ]
-        }
-    }
+    model_config = {"json_schema_extra": {"examples": [{"image_url": IMAGE_URL}]}}
+
 
 class ImageRemoveBackgroundResponse(BaseModel):
     success: bool = Field(..., description="배경 제거 성공 여부")
@@ -33,7 +26,68 @@ class ImageRemoveBackgroundResponse(BaseModel):
                 {
                     "success": True,
                     "nobg_image_url": "https://example-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/example.png",
-                    "message": "Background removed successfully"
+                    "message": "Background removed successfully",
+                }
+            ]
+        }
+    }
+
+
+class BatchRemoveBackgroundRequest(BaseModel):
+    image_urls: List[str] = Field(
+        ...,
+        description="배경을 제거할 이미지 URL 목록 (최대 10개)",
+        min_length=1,
+        max_length=10,
+    )
+
+    model_config = {
+        "json_schema_extra": {"examples": [{"image_urls": TEST_IMAGE_URLS}]}
+    }
+
+
+class BatchRemoveBackgroundItem(BaseModel):
+    original_url: str = Field(..., description="원본 이미지 URL")
+    nobg_image_url: str | None = Field(None, description="배경이 제거된 이미지의 URL")
+    success: bool = Field(..., description="처리 성공 여부")
+    error: str | None = Field(None, description="실패 시 에러 메시지")
+
+
+class BatchRemoveBackgroundResponse(BaseModel):
+    success: bool = Field(..., description="전체 배치 처리 성공 여부")
+    results: List[BatchRemoveBackgroundItem] = Field(
+        ..., description="각 이미지별 처리 결과"
+    )
+    total_count: int = Field(..., description="전체 이미지 개수")
+    success_count: int = Field(..., description="성공한 이미지 개수")
+    failed_count: int = Field(..., description="실패한 이미지 개수")
+    processing_time: float = Field(..., description="총 처리 시간(초)")
+    message: str | None = Field(None, description="상태 메시지")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "success": True,
+                    "results": [
+                        {
+                            "original_url": IMAGE_URL,
+                            "nobg_image_url": "https://example-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/abc123.png",
+                            "success": True,
+                            "error": None,
+                        },
+                        {
+                            "original_url": "https://invalid-url.com/image.jpg",
+                            "nobg_image_url": None,
+                            "success": False,
+                            "error": "Failed to download image",
+                        },
+                    ],
+                    "total_count": 2,
+                    "success_count": 1,
+                    "failed_count": 1,
+                    "processing_time": 3.5,
+                    "message": "Batch processing completed: 1 succeeded, 1 failed",
                 }
             ]
         }
@@ -42,7 +96,9 @@ class ImageRemoveBackgroundResponse(BaseModel):
 
 class CompositeImageItem(BaseModel):
     product_id: int = Field(..., description="상품 ID")
-    category: str = Field(..., description="카테고리 (TOP, BOTTOM, SHOES, OUTER, ACCESSORY)")
+    category: str = Field(
+        ..., description="카테고리 (TOP, BOTTOM, SHOES, OUTER, ACCESSORY)"
+    )
     name: str = Field(..., description="상품명")
     brand: str = Field(..., description="브랜드명")
     price: int = Field(..., description="상품 가격")
@@ -61,7 +117,7 @@ class CompositeImageItem(BaseModel):
                     "price": 59000,
                     "image_url": "https://example.com/image4.jpg",
                     "link_url": "https://example.com/product4",
-                    "nobg_image_url": "https://example-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/28f359d51c0584bad37b333181e0aa1b.png"
+                    "nobg_image_url": "https://example-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/28f359d51c0584bad37b333181e0aa1b.png",
                 }
             ]
         }
@@ -84,7 +140,7 @@ class CreateCompositeImageRequest(BaseModel):
                             "price": 59000,
                             "image_url": "https://example.com/image4.jpg",
                             "link_url": "https://example.com/product4",
-                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/28f359d51c0584bad37b333181e0aa1b.png"
+                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/28f359d51c0584bad37b333181e0aa1b.png",
                         },
                         {
                             "product_id": 220,
@@ -94,7 +150,7 @@ class CreateCompositeImageRequest(BaseModel):
                             "price": 79000,
                             "image_url": "https://example.com/image5.jpg",
                             "link_url": "https://example.com/product5",
-                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/c6927aeabf58ddc09925ca0945b67509.png"
+                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/c6927aeabf58ddc09925ca0945b67509.png",
                         },
                         {
                             "product_id": 315,
@@ -104,7 +160,7 @@ class CreateCompositeImageRequest(BaseModel):
                             "price": 100000,
                             "image_url": "https://example.com/image6.jpg",
                             "link_url": "https://example.com/product6",
-                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/2f0927359e4d862f7313d4350f27deed.png"
+                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/2f0927359e4d862f7313d4350f27deed.png",
                         },
                         {
                             "product_id": 415,
@@ -114,7 +170,7 @@ class CreateCompositeImageRequest(BaseModel):
                             "price": 100000,
                             "image_url": "https://example.com/image6.jpg",
                             "link_url": "https://example.com/product6",
-                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/1c0c614bb64dbd5a34d142230b96f287.png"
+                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/1c0c614bb64dbd5a34d142230b96f287.png",
                         },
                         {
                             "product_id": 515,
@@ -124,8 +180,8 @@ class CreateCompositeImageRequest(BaseModel):
                             "price": 100000,
                             "image_url": "https://example.com/image6.jpg",
                             "link_url": "https://example.com/product6",
-                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/0fab2b1f957f14e60be7f53fa2bf483a.png"
-                        }
+                            "nobg_image_url": "https://fastcampus-finalproject-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/0fab2b1f957f14e60be7f53fa2bf483a.png",
+                        },
                     ]
                 }
             ]
@@ -157,7 +213,9 @@ class CreateCompositeImageResponse(BaseModel):
     image_width: int = Field(1200, description="합성 이미지 가로(px)")
     image_height: int = Field(1600, description="합성 이미지 세로(px)")
     total_price: int = Field(0, description="모든 상품의 총가격")
-    items: List[CompositeImageItemWithPosition] | None = Field(None, description="이미지 내 각 상품의 배치 정보")
+    items: List[CompositeImageItemWithPosition] | None = Field(
+        None, description="이미지 내 각 상품의 배치 정보"
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -181,10 +239,10 @@ class CreateCompositeImageResponse(BaseModel):
                                 "x": 150,
                                 "y": 100,
                                 "width": 480,
-                                "height": 640
-                            }
+                                "height": 640,
+                            },
                         }
-                    ]
+                    ],
                 }
             ]
         }
@@ -202,7 +260,7 @@ class CreateCompositeJobResponse(BaseModel):
                 {
                     "success": True,
                     "job_id": "abc123-def456-ghi789",
-                    "message": "Composite image creation job started"
+                    "message": "Composite image creation job started",
                 }
             ]
         }
@@ -211,10 +269,14 @@ class CreateCompositeJobResponse(BaseModel):
 
 class CompositeJobStatus(BaseModel):
     job_id: str = Field(..., description="Job ID")
-    status: str = Field(..., description="작업 상태: pending, processing, completed, failed")
+    status: str = Field(
+        ..., description="작업 상태: pending, processing, completed, failed"
+    )
     created_at: str = Field(..., description="작업 생성 시각")
     completed_at: str | None = Field(None, description="작업 완료 시각")
-    result: CreateCompositeImageResponse | None = Field(None, description="완료 시 결과 데이터")
+    result: CreateCompositeImageResponse | None = Field(
+        None, description="완료 시 결과 데이터"
+    )
     error: str | None = Field(None, description="실패 시 오류 메시지")
 
     model_config = {
@@ -226,7 +288,7 @@ class CompositeJobStatus(BaseModel):
                     "created_at": "2024-01-15T10:30:00Z",
                     "completed_at": "2024-01-15T10:30:05Z",
                     "result": {
-                        "success": True,     
+                        "success": True,
                         "message": "Composite image created successfully",
                         "composite_image_url": "https://example.com/composite/abc.png",
                         "image_width": 1200,
@@ -234,7 +296,7 @@ class CompositeJobStatus(BaseModel):
                         "total_price": 438000,
                         "items": [],
                     },
-                    "error": None
+                    "error": None,
                 }
             ]
         }
