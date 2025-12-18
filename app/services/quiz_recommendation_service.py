@@ -71,21 +71,69 @@ class QuizRecommendationService:
 
         logger.info(f"Found {total_candidates} total product candidates")
 
-        # 3. LLM으로 최적 조합 선택
-        selected_outfits = await self.llm_service.select_outfit_combinations(
-            candidates=candidates,
-            occasion=quiz_data["occasion"],
-            style=quiz_data["style"],
-            body_type=quiz_data["body_type"],
-            budget=quiz_data["budget"],
-            num_outfits=3,  # 3개 추천
+        # 3. exclude_combinations를 frozenset으로 변환 (순서 무관 비교용)
+        excluded_sets = {
+            frozenset(combination) for combination in request.exclude_combinations
+        }
+        logger.info(f"Excluding {len(excluded_sets)} previous combinations")
+
+        # 4. 중복 없이 3개 생성 (최대 30번 시도)
+        unique_outfits = []
+        seen_combinations = set()  # 이번 응답에서 이미 본 조합
+        max_attempts = 30
+        attempts = 0
+
+        while len(unique_outfits) < 3 and attempts < max_attempts:
+            attempts += 1
+
+            # LLM으로 코디 조합 선택 (3개 요청)
+            selected_outfits = await self.llm_service.select_outfit_combinations(
+                candidates=candidates,
+                occasion=quiz_data["occasion"],
+                style=quiz_data["style"],
+                body_type=quiz_data["body_type"],
+                budget=quiz_data["budget"],
+                num_outfits=3 - len(unique_outfits),  # 부족한 개수만큼 요청
+            )
+
+            # 각 코디를 중복 체크하면서 추가
+            for outfit in selected_outfits:
+                if len(unique_outfits) >= 3:
+                    break
+
+                # 코디의 상품 ID들을 frozenset으로 변환
+                product_ids = frozenset(
+                    product.id for product in outfit["items"].values()
+                )
+
+                # 중복 체크: exclude_combinations 또는 이번 응답에서 이미 본 조합
+                if product_ids in excluded_sets or product_ids in seen_combinations:
+                    logger.info(
+                        f"Skipping duplicate combination: {sorted(product_ids)}"
+                    )
+                    continue
+
+                # 유니크한 조합이면 추가
+                unique_outfits.append(outfit)
+                seen_combinations.add(product_ids)
+                logger.info(
+                    f"Added unique outfit {len(unique_outfits)}: {sorted(product_ids)}"
+                )
+
+        # 3개 못 만들면 경고 로그
+        if len(unique_outfits) < 3:
+            logger.warning(
+                f"Could not generate 3 unique outfits after {attempts} attempts. "
+                f"Generated {len(unique_outfits)} outfits."
+            )
+
+        logger.info(
+            f"Generated {len(unique_outfits)} unique outfits after {attempts} attempts"
         )
 
-        logger.info(f"LLM selected {len(selected_outfits)} outfits")
-
-        # 4. DTO로 변환 (이미지 합성 포함)
+        # 5. DTO로 변환 (이미지 합성 포함)
         outfit_dtos = []
-        for i, outfit in enumerate(selected_outfits, 1):
+        for i, outfit in enumerate(unique_outfits, 1):
             outfit_dto = await self._convert_to_outfit_dto(
                 outfit=outfit,
                 display_order=i,
