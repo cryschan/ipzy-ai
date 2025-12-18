@@ -384,7 +384,7 @@ class ImageProcessingService:
         asyncio.gather를 사용하여 병렬 처리합니다.
 
         Args:
-            image_urls: 처리할 이미지 URL 목록 (최대 10개)
+            image_urls: 처리할 이미지 URL 목록 (최대 15개)
 
         Returns:
             각 이미지의 처리 결과 리스트
