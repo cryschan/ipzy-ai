@@ -21,8 +21,14 @@ class QuizRecommendationRequest(BaseModel):
 
     sessionId: int = Field(..., description="퀴즈 세션 ID")
     answers: List[QuizAnswerDto] = Field(..., description="퀴즈 답변 리스트")
+    exclude_combinations: List[List[int]] = Field(
+        default=[],
+        alias="excludeCombinations",
+        description="제외할 상품 조합 리스트 (이전에 본 코디의 상품 ID 리스트)",
+    )
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "sessionId": 123,
@@ -48,6 +54,7 @@ class QuizRecommendationRequest(BaseModel):
                         "selectedOptions": ["300000"],
                     },
                 ],
+                "excludeCombinations": [[1, 2, 3, 4], [5, 6, 7, 8]],
             }
         }
 
