@@ -82,15 +82,11 @@ class CamelCaseMiddleware(BaseHTTPMiddleware):
         if "application/json" not in content_type:
             return response
 
-        # StreamingResponse 처리
+        # StreamingResponse는 전체 본문을 메모리에 올리면 스트리밍 이점이 사라지므로 변환 대상에서 제외
         if isinstance(response, StreamingResponse):
-            # 응답 본문 읽기
-            body_parts = []
-            async for chunk in response.body_iterator:
-                body_parts.append(chunk)
-            body = b"".join(body_parts)
-        else:
-            body = response.body
+            return response
+
+        body = response.body
 
         try:
             # JSON 파싱
