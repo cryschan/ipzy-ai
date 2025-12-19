@@ -36,9 +36,9 @@ class ImageRemoveBackgroundResponse(BaseModel):
 class BatchRemoveBackgroundRequest(BaseModel):
     image_urls: List[str] = Field(
         ...,
-        description="배경을 제거할 이미지 URL 목록 (최대 10개)",
+        description="배경을 제거할 이미지 URL 목록 (최대 15개)",
         min_length=1,
-        max_length=10,
+        max_length=15,
     )
 
     model_config = {

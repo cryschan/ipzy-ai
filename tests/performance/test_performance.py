@@ -84,7 +84,7 @@ async def call_individual_api_with_retry(
 async def test_individual_api(urls: List[str]) -> dict:
     """개별 API를 여러 번 호출 (병렬 처리 + 재시도)"""
     print("\n" + "=" * 60)
-    print("🔴 개별 API 테스트 (10번 호출, 병렬 처리, 재시도 포함)")
+    print("🔴 개별 API 테스트 (15번 호출, 병렬 처리, 재시도 포함)")
     print("=" * 60)
 
     start_time = time.time()
@@ -198,7 +198,7 @@ async def main():
     time_saved = individual_result["total_time"] - batch_result["total_time"]
     improvement = (time_saved / individual_result["total_time"]) * 100
 
-    print(f"\n개별 API (10번 호출):")
+    print(f"\n개별 API (15번 호출):")
     print(f"  ├─ 총 소요 시간: {individual_result['total_time']:.2f}초")
     print(
         f"  ├─ 성공/실패: {individual_result['success_count']}/{individual_result['failed_count']}"

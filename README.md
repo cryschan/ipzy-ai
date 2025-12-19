@@ -11,20 +11,24 @@
 ## 🎯 주요 기능
 
 ### 1. 상품 이미지 자동 분석
+
 - **OpenAI GPT-4o**를 활용한 패션 아이템 분석
 - 색상, 패턴, 핏, 스타일 자동 추출
 - 데이터베이스 기반 상품 관리
 
 ### 2. AI 코디 추천
+
 - **OpenAI GPT-3.5-turbo**로 퀴즈 기반 개인화 추천
 - 상의 + 하의 + 신발 + 아우터 조합
 - 예산, 체형, 스타일 고려
 
 ### 3. 합성 이미지 생성
+
 - 배경 제거 (누끼)
 - 레이어 방식 코디 미리보기
 
 ### 4. 퀴즈 기반 스타일 프로파일링
+
 - 사용자 선호도 벡터화
 - 지속적인 학습 및 개선
 
@@ -32,14 +36,14 @@
 
 ## 🛠️ 기술 스택
 
-| 카테고리 | 기술 | 용도 |
-|---------|------|------|
-| **Framework** | FastAPI | 웹 서버 |
-| **이미지 분석** | OpenAI GPT-4o | 상품 분석 |
-| **코디 추천** | OpenAI GPT-3.5-turbo | LLM 추천 |
-| **Database** | PostgreSQL + pgvector | 상품 저장 & 벡터 검색 |
-| **이미지 처리** | Pillow + rembg | 합성 이미지 |
-| **Container** | Docker | 배포 |
+| 카테고리        | 기술                  | 용도                  |
+| --------------- | --------------------- | --------------------- |
+| **Framework**   | FastAPI               | 웹 서버               |
+| **이미지 분석** | OpenAI GPT-4o         | 상품 분석             |
+| **코디 추천**   | OpenAI GPT-3.5-turbo  | LLM 추천              |
+| **Database**    | PostgreSQL + pgvector | 상품 저장 & 벡터 검색 |
+| **이미지 처리** | Pillow + rembg        | 합성 이미지           |
+| **Container**   | Docker                | 배포                  |
 
 ---
 
@@ -54,10 +58,11 @@
 ### 1. 사전 준비
 
 **필수:**
+
 - Python 3.11+
 - Docker & Docker Compose
 - OpenAI API 키 ([발급받기](https://platform.openai.com/api-keys))
-- AWS 계정 (S3 이미지 업로드용)
+- AWS CLI & IAM User (S3 이미지 업로드용)
 
 ### 2. 환경 설정
 
@@ -68,13 +73,18 @@ cd /Users/a/IdeaProjects/FinalProject/ipzy-ai
 # 2. 환경변수 설정
 cp .env.example .env
 
-# 3. .env 파일 수정 (필수):
+# 3. AWS 자격증명 설정 (권장: aws configure 사용)
+aws configure
+# AWS Access Key ID: <IAM User의 Access Key>
+# AWS Secret Access Key: <IAM User의 Secret Key>
+# Default region: ap-northeast-2
+# Default output format: json
+
+# 4. .env 파일 수정 (필수):
 #    - OPENAI_API_KEY          (코디 추천 AI)
-#    - AWS_ACCESS_KEY_ID       (이미지 업로드)
-#    - AWS_SECRET_ACCESS_KEY   (이미지 업로드)
 #    - AWS_S3_BUCKET           (S3 버킷명)
 
-# 4. Docker 네트워크 생성
+# 5. Docker 네트워크 생성
 docker network create ipzy-network
 ```
 
@@ -110,6 +120,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ### 4. API 문서 확인
 
 브라우저에서 접속:
+
 ```
 http://localhost:8000/api/docs
 ```
@@ -151,11 +162,11 @@ ipzy-ai/
 
 ### OpenAI GPT-3.5-turbo 사용
 
-| 모델 | 추천 1건 비용 | 월 1,000명 |
-|------|--------------|-----------|
-| **GPT-3.5-turbo** | ~$0.002 | **~$20** |
-| GPT-4o-mini | ~$0.003 | ~$30 |
-| GPT-4o | ~$0.05 | ~$500 |
+| 모델              | 추천 1건 비용 | 월 1,000명 |
+| ----------------- | ------------- | ---------- |
+| **GPT-3.5-turbo** | ~$0.002       | **~$20**   |
+| GPT-4o-mini       | ~$0.003       | ~$30       |
+| GPT-4o            | ~$0.05        | ~$500      |
 
 **비용 효율적인 추천 시스템 구축**
 
@@ -164,11 +175,13 @@ ipzy-ai/
 ## 🧪 테스트
 
 ### 헬스 체크
+
 ```bash
 curl http://localhost:8000/health
 ```
 
 ### 상품 분석 (Webhook)
+
 ```bash
 curl -X POST http://localhost:8000/api/analyze/batch \
   -H "Content-Type: application/json" \
@@ -177,6 +190,7 @@ curl -X POST http://localhost:8000/api/analyze/batch \
 ```
 
 ### 코디 추천
+
 ```bash
 curl -X POST http://localhost:8000/api/recommendations \
   -H "Content-Type: application/json" \
@@ -194,25 +208,27 @@ curl -X POST http://localhost:8000/api/recommendations \
 ## 🔗 연동
 
 ### 백엔드 서버
+
 - 리포지토리: https://github.com/cryschan/ipzy-backend
 - 통신: `ipzy-network` Docker 네트워크
 - 인증: API Key 기반
 
 ### API 엔드포인트
 
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| GET | `/health` | 헬스 체크 |
-| POST | `/api/analyze/batch` | 상품 배치 분석 |
-| POST | `/api/users/analyze-quiz` | 퀴즈 분석 |
-| POST | `/api/recommendations` | 코디 추천 |
-| POST | `/api/feedback/like` | 피드백 저장 |
+| Method | Endpoint                  | 설명           |
+| ------ | ------------------------- | -------------- |
+| GET    | `/health`                 | 헬스 체크      |
+| POST   | `/api/analyze/batch`      | 상품 배치 분석 |
+| POST   | `/api/users/analyze-quiz` | 퀴즈 분석      |
+| POST   | `/api/recommendations`    | 코디 추천      |
+| POST   | `/api/feedback/like`      | 피드백 저장    |
 
 ---
 
 ## 🛡️ 보안
 
 - API Key 기반 인증
+- AWS IAM 계정 사용
 - 개인정보 최소 수집 (user_id만 보유)
 - ChromaDB 로컬 저장 (외부 접근 차단)
 - GDPR 준수 설계 (삭제 권리 보장)
@@ -222,16 +238,19 @@ curl -X POST http://localhost:8000/api/recommendations \
 ## 📈 로드맵
 
 ### Phase 1: MVP (진행 중)
+
 - [ ] 기본 추천 시스템
 - [ ] 이미지 분석 파이프라인
 - [ ] 퀴즈 처리
 
 ### Phase 2: 고도화
+
 - [ ] 벡터 검색 활용
 - [ ] 피드백 학습
 - [ ] 성능 최적화
 
 ### Phase 3: 고급 기능
+
 - [ ] 유명인 스타일 분석
 - [ ] 착용 이미지 기반 추천
 - [ ] 트렌드 반영

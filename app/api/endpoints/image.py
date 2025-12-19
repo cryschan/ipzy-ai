@@ -48,7 +48,7 @@ async def remove_background(request: ImageRemoveBackgroundRequest):
 @router.post("/remove-background/batch", response_model=BatchRemoveBackgroundResponse)
 async def remove_background_batch(request: BatchRemoveBackgroundRequest):
     """
-    여러 이미지의 배경을 한 번에 제거합니다 (최대 10개).
+    여러 이미지의 배경을 한 번에 제거합니다 (최대 15개).
     모든 이미지를 병렬로 처리하여 처리 시간을 최소화합니다.
     """
     try:
