@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.database import close_db
+from app.middleware.case_converter import CamelCaseMiddleware
 
 
 @asynccontextmanager
@@ -54,6 +55,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# CamelCase 응답 변환 미들웨어 (Python 내부는 snake_case 유지)
+app.add_middleware(CamelCaseMiddleware)
 
 app.include_router(api_router, prefix=settings.API_PREFIX)
 
