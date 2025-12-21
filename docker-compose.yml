@@ -56,12 +56,12 @@ services:
       - ~/.aws:/root/.aws:ro        # AWS credentials (aws configure 사용 시)
 
     networks:
-      - ipzy-network
+      - ipzy-backend_default
 
     restart: on-failure
 
 networks:
-  ipzy-network:
+  ipzy-backend_default:
     external: true
 
 volumes:
