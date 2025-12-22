@@ -81,14 +81,25 @@ class ImageProcessingService:
             logger.exception(f"S3 head_object failed for key={s3_key}")
             raise
 
-    def _get_s3_url(self, s3_key: str) -> str:
+    def _get_s3_url(self, s3_key: str, expires_in: int = 3600) -> str:
         """
-        주어진 객체 키에 대한 공개 S3 URL을 생성합니다.
-        참고: 버킷 정책/ACL로 공개 읽기 가능하거나, 퍼블릭 배포(예: CloudFront)로 노출되어 있어야 합니다.
+        주어진 객체 키에 대한 Pre-signed URL을 생성합니다.
+
+        Args:
+            s3_key: S3 객체 키
+            expires_in: URL 유효 시간 (초). 기본값 3600초 (1시간)
+
+        Returns:
+            Pre-signed URL (인증 없이 임시 접근 가능)
         """
-        # 각 경로 세그먼트를 인코딩하여, 슬래시는 유지한 안전한 URL 경로 생성
-        encoded_key = "/".join(quote(segment, safe="") for segment in s3_key.split("/"))
-        return f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{encoded_key}"
+        return self.s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': settings.AWS_S3_BUCKET,
+                'Key': s3_key
+            },
+            ExpiresIn=expires_in
+        )
 
     async def _download_image(self, image_url: str) -> Image.Image:
         """배경 제거 없이 URL에서 이미지를 다운로드"""
