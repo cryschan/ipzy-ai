@@ -14,12 +14,6 @@ class Settings(BaseSettings):
     BACKEND_API_URL: str = "http://ipzy-app:8080"
     BACKEND_API_KEY: str = ""
 
-    VECTOR_DB_PATH: str = "./data/vector_db"
-
-    CHROMA_COLLECTION_NAME: str = "fashion_products"
-
-    IMAGE_OUTPUT_DIR: str = "./outputs/composites"
-
     MAX_PRODUCTS_PER_CATEGORY: int = 5
     MAX_RECOMMENDATIONS: int = 3
 

@@ -157,7 +157,7 @@ class ImageProcessingService:
                 buffer,
                 settings.AWS_S3_BUCKET,
                 s3_key,
-                ExtraArgs={"ContentType": "image/png"},
+                ExtraArgs={"ContentType": "image/png", "ACL": "public-read"},
             )
 
             composite_url = self._get_s3_url(s3_key)
@@ -334,7 +334,7 @@ class ImageProcessingService:
                 buffer,
                 settings.AWS_S3_BUCKET,
                 s3_key,
-                ExtraArgs={"ContentType": "image/png"},
+                ExtraArgs={"ContentType": "image/png", "ACL": "public-read"},
             )
 
             return self._get_s3_url(s3_key), None
