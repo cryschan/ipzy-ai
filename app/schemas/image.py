@@ -210,8 +210,8 @@ class CreateCompositeImageResponse(BaseModel):
     success: bool = Field(..., description="합성 이미지 생성 성공 여부")
     message: str | None = Field(None, description="상태 메시지")
     composite_image_url: str | None = Field(None, description="합성 이미지 URL")
-    image_width: int = Field(1200, description="합성 이미지 가로(px)")
-    image_height: int = Field(1600, description="합성 이미지 세로(px)")
+    image_width: int = Field(600, description="합성 이미지 가로(px)")
+    image_height: int = Field(800, description="합성 이미지 세로(px)")
     total_price: int = Field(0, description="모든 상품의 총가격")
     items: List[CompositeImageItemWithPosition] | None = Field(
         None, description="이미지 내 각 상품의 배치 정보"
@@ -224,8 +224,8 @@ class CreateCompositeImageResponse(BaseModel):
                     "success": True,
                     "message": "Composite image created successfully",
                     "composite_image_url": "https://example-bucket.s3.ap-northeast-2.amazonaws.com/background-removed/composite/example.png",
-                    "image_width": 1200,
-                    "image_height": 1600,
+                    "image_width": 600,
+                    "image_height": 800,
                     "total_price": 59000,
                     "items": [
                         {
@@ -291,8 +291,8 @@ class CompositeJobStatus(BaseModel):
                         "success": True,
                         "message": "Composite image created successfully",
                         "composite_image_url": "https://example.com/composite/abc.png",
-                        "image_width": 1200,
-                        "image_height": 1600,
+                        "image_width": 600,
+                        "image_height": 800,
                         "total_price": 438000,
                         "items": [],
                     },

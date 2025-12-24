@@ -157,8 +157,8 @@ class OutfitRecommendationDto(BaseModel):
                     "success": True,
                     "message": "추천 완료",
                     "compositeImageUrl": "https://s3.../composite_123.png",
-                    "imageWidth": 1200,
-                    "imageHeight": 1600,
+                    "imageWidth": 600,
+                    "imageHeight": 800,
                     "totalPrice": 250000,
                     "items": [
                         {
@@ -209,8 +209,8 @@ class QuizRecommendationResponse(BaseModel):
                             "success": True,
                             "message": "추천 완료",
                             "compositeImageUrl": "https://s3.../composite_1.png",
-                            "imageWidth": 1200,
-                            "imageHeight": 1600,
+                            "imageWidth": 600,
+                            "imageHeight": 800,
                             "totalPrice": 250000,
                             "items": [
                                 {
