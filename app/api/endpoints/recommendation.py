@@ -9,8 +9,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.schemas.quiz_recommendation import (QuizRecommendationRequest,
-                                             QuizRecommendationResponse)
+from app.schemas.quiz_recommendation import (
+    QuizRecommendationRequest,
+    QuizRecommendationResponse,
+)
 from app.services.quiz_recommendation_service import QuizRecommendationService
 
 logger = logging.getLogger(__name__)
@@ -44,8 +46,8 @@ router = APIRouter()
                                     "success": True,
                                     "message": "추천 완료",
                                     "compositeImageUrl": "https://s3.amazonaws.com/composite/abc123.png",
-                                    "imageWidth": 1200,
-                                    "imageHeight": 1600,
+                                    "imageWidth": 600,
+                                    "imageHeight": 800,
                                     "totalPrice": 250000,
                                     "items": [
                                         {
@@ -111,7 +113,9 @@ router = APIRouter()
             "description": "서버 에러",
             "content": {
                 "application/json": {
-                    "example": {"detail": "추천 생성 중 오류가 발생했습니다: Internal Server Error"}
+                    "example": {
+                        "detail": "추천 생성 중 오류가 발생했습니다: Internal Server Error"
+                    }
                 }
             },
         },

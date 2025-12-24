@@ -193,8 +193,8 @@ class ImageProcessingService:
                 "composite_url": composite_url,
                 "items": items_with_positions,
                 "total_price": total_price,
-                "image_width": 1200,
-                "image_height": 1600,
+                "image_width": 600,
+                "image_height": 800,
             }
 
         except ClientError:
@@ -241,19 +241,34 @@ class ImageProcessingService:
     def _compose_images(
         self, processed_images: List[dict]
     ) -> tuple[Image.Image, List[dict]]:
-        canvas_width = 1200
-        canvas_height = 1600
-        canvas = Image.new("RGBA", (canvas_width, canvas_height), (255, 255, 255, 0))
+        canvas_width = 600
+        canvas_height = 800
+        canvas = Image.new("RGBA", (canvas_width, canvas_height), (0, 0, 0, 0))
 
-        # 2열 레이아웃 배치
-        # 왼쪽(LEFT): TOP(상단), BOTTOM(하단)
-        # 오른쪽(RIGHT): OUTER(상단), ACCESSORY(중간), SHOES(하단)
+        # 2열 레이아웃 배치 (3:4 비율)
+        # 왼쪽(LEFT): TOP(상단), BOTTOM(하단) - 200×300px
+        # 오른쪽(RIGHT): OUTER(상단), ACCESSORY(중간), SHOES(하단) - 180×270px
         category_positions = {
-            "top": {"x": "left", "y": 100, "scale": 0.4},  # 왼쪽 상단
-            "outer": {"x": "right", "y": 100, "scale": 0.4},  # 오른쪽 상단
-            "bottom": {"x": "left", "y": 800, "scale": 0.4},  # 왼쪽 하단
-            "accessory": {"x": "right", "y": 600, "scale": 0.3},  # 오른쪽 중간
-            "shoes": {"x": "right", "y": 1100, "scale": 0.35},  # 오른쪽 하단
+            "top": {"x": "left", "y": 50, "width": 200, "height": 300},  # 왼쪽 상단
+            "outer": {
+                "x": "right",
+                "y": 40,
+                "width": 180,
+                "height": 270,
+            },  # 오른쪽 상단
+            "bottom": {"x": "left", "y": 450, "width": 200, "height": 300},  # 왼쪽 하단
+            "accessory": {
+                "x": "right",
+                "y": 340,
+                "width": 180,
+                "height": 270,
+            },  # 오른쪽 중간
+            "shoes": {
+                "x": "right",
+                "y": 510,
+                "width": 180,
+                "height": 270,
+            },  # 오른쪽 하단
         }
 
         positions = []  # 각 아이템의 위치 정보를 기록
@@ -267,27 +282,50 @@ class ImageProcessingService:
 
             position_info = category_positions[category]
 
+            # 카테고리별 목표 크기
+            target_width = position_info["width"]
+            target_height = position_info["height"]
+
+            # 원본 비율 유지하면서 목표 박스에 맞춰 리사이즈
             img_width, img_height = img.size
-            scale = position_info["scale"]
-            new_width = int(img_width * scale)
-            new_height = int(img_height * scale)
+            aspect_ratio = img_width / img_height
+
+            # 목표 박스에 맞춰 리사이즈 (비율 유지)
+            if aspect_ratio > target_width / target_height:
+                # 가로가 더 긴 경우: 폭 기준으로 리사이즈
+                new_width = target_width
+                new_height = int(target_width / aspect_ratio)
+            else:
+                # 세로가 더 긴 경우: 높이 기준으로 리사이즈
+                new_height = target_height
+                new_width = int(target_height * aspect_ratio)
 
             img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            # 투명 배경의 목표 크기 캔버스 생성
+            item_canvas = Image.new("RGBA", (target_width, target_height), (0, 0, 0, 0))
+
+            # 중앙에 배치
+            paste_x = (target_width - new_width) // 2
+            paste_y = (target_height - new_height) // 2
+
+            if img_resized.mode == "RGBA":
+                item_canvas.paste(img_resized, (paste_x, paste_y), img_resized)
+            else:
+                item_canvas.paste(img_resized, (paste_x, paste_y))
 
             # 좌/우 정렬에 따라 x 위치 계산
             if position_info["x"] == "left":
                 # 왼쪽 열: 캔버스의 1/4 지점에 정렬
-                x_position = (canvas_width // 4) - (new_width // 2)
+                x_position = (canvas_width // 4) - (target_width // 2)
             else:  # 'right'
                 # 오른쪽 열: 캔버스의 3/4 지점에 정렬
-                x_position = (canvas_width * 3 // 4) - (new_width // 2)
+                x_position = (canvas_width * 3 // 4) - (target_width // 2)
 
             y_position = position_info["y"]
 
-            if img_resized.mode == "RGBA":
-                canvas.paste(img_resized, (x_position, y_position), img_resized)
-            else:
-                canvas.paste(img_resized, (x_position, y_position))
+            # 최종 캔버스에 배치
+            canvas.paste(item_canvas, (x_position, y_position), item_canvas)
 
             # 위치 정보 저장
             positions.append(
@@ -296,8 +334,8 @@ class ImageProcessingService:
                     "product_id": item.get("product_id"),
                     "x": x_position,
                     "y": y_position,
-                    "width": new_width,
-                    "height": new_height,
+                    "width": target_width,
+                    "height": target_height,
                 }
             )
 
